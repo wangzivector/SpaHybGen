@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>spahybgen</name>
+    <version>0.1.0</version>
+    <description>Spatial Hybrid Grasp Generation</description>
+
+    <maintainer email="wangzi199822@gmail.com">Xianli Wang</maintainer>
+
+    <license>BSD</license>
+    <url>https://github.com/wangzivector</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <depend>rospy</depend>
+</package>

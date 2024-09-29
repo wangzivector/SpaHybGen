@@ -1,0 +1,13 @@
+{
+    "_gripper_palm" : [62825, 62829, 62656, 62663],
+    "_gripper_fingerA_prox" : [2539, 2543, 2540, 2538],
+    "gripper_fingerA_med" : [2406, 2410, 2411, 2408],
+    "gripper_fingerA_dist" : [495, 492, 527, 542],
+    "_gripper_fingerB_prox" : [2539, 2543, 2540, 2538],
+    "gripper_fingerB_med" : [2406, 2410, 2411, 2408],
+    "gripper_fingerB_dist" : [495, 492, 527, 542],
+    "_gripper_fingerC_prox" : [2539, 2543, 2540, 2538],
+    "gripper_fingerC_med" : [2406, 2410, 2411, 2408],
+    "gripper_fingerC_dist" : [495, 492, 527, 542]
+
+}

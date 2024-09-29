@@ -1,0 +1,578 @@
+<!-- <?xml version="1.0" encoding="utf-8"?> -->
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="brunelhand">
+
+  <!-- ROS base_link to 'Base' Coordinates transform work-around -->
+  <link name="base"/>
+  <joint name="base_link-base_fixed_joint" type="fixed">
+    <origin xyz="0.001 0.02365 0.12935" rpy="0.174532925 0 0"/>
+    <parent link="base"/>
+    <child link="base_link"/>
+  </joint>
+
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.00041315 0.046201 -0.0052508"
+        rpy="0 0 0" />
+      <mass
+        value="0.13447" />
+      <inertia
+        ixx="8.973E-05"
+        ixy="-3.791E-06"
+        ixz="1.0383E-06"
+        iyy="6.194E-05"
+        iyz="1.0768E-06"
+        izz="0.00014351" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="finger_1_1_link">
+    <inertial>
+      <origin
+        xyz="-0.031402 -0.0015918 0.012353"
+        rpy="0 0 0" />
+      <mass
+        value="0.021976" />
+      <inertia
+        ixx="3.556E-06"
+        ixy="6.6303E-07"
+        ixz="-2.7864E-06"
+        iyy="8.0335E-06"
+        iyz="2.8174E-07"
+        izz="6.1785E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_1_1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_1_1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_1_1_joint"
+    type="revolute">
+    <origin
+      xyz="0.016632 0.050521 0.0053833"
+      rpy="-1.5736 0.00052366 -2.9587" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger_1_1_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_2_1_link">
+    <inertial>
+      <origin
+        xyz="-0.0202210473916627 0.00467377505929652 -1.00759010020907E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.00661608567108159" />
+      <inertia
+        ixx="2.18317371661273E-07"
+        ixy="-4.68201511708065E-08"
+        ixz="1.73875589586181E-10"
+        iyy="1.29642016877764E-06"
+        iyz="1.31816692728403E-11"
+        izz="1.17311400947569E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_2_1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_2_1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_2_1_joint"
+    type="revolute">
+    <origin
+      xyz="0.028329 0.096961 -0.010082"
+      rpy="-1.5708 0.00019294 -1.6582" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger_2_1_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_2_2_link">
+    <inertial>
+      <origin
+        xyz="-0.0141150216812508 0.00258059835660092 0.0084986836056486"
+        rpy="0 0 0" />
+      <mass
+        value="0.00259607203005743" />
+      <inertia
+        ixx="5.85395692176209E-08"
+        ixy="-1.30135935599493E-08"
+        ixz="7.89158220478838E-12"
+        iyy="2.78255052184547E-07"
+        iyz="2.28623553967967E-11"
+        izz="2.35351853972616E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_2_2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_2_2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_2_2_joint"
+    type="revolute">
+    <origin
+      xyz="-0.045449 0.00063441 -0.0086815"
+      rpy="0 0 0" />
+    <parent
+      link="finger_2_1_link" />
+    <child
+      link="finger_2_2_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_3_1_link">
+    <inertial>
+      <origin
+        xyz="0.0187756397672986 -0.00703757558019307 0.00879662298752913"
+        rpy="0 0 0" />
+      <mass
+        value="0.00644141765002093" />
+      <inertia
+        ixx="2.1936522301528E-07"
+        ixy="7.21593370601811E-08"
+        ixz="-1.9723276489598E-09"
+        iyy="1.27804712865319E-06"
+        iyz="1.57518119751195E-10"
+        izz="1.15749039782825E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_3_1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_3_1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_3_1_joint"
+    type="revolute">
+    <origin
+      xyz="0.00058329 0.098288 -0.0098332"
+      rpy="1.5706 -0.10756 1.5725" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger_3_1_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_3_2_link">
+    <inertial>
+      <origin
+        xyz="0.0177284269882717 -0.00268425424329814 0.00849547567477923"
+        rpy="0 0 0" />
+      <mass
+        value="0.00449632362127892" />
+      <inertia
+        ixx="1.26213840966193E-07"
+        ixy="7.64286378399953E-08"
+        ixz="-8.8244175595536E-11"
+        iyy="6.93646438905955E-07"
+        iyz="6.6570671182524E-11"
+        izz="6.22866207662228E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_3_2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_3_2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_3_2_joint"
+    type="revolute">
+    <origin
+      xyz="0.044645 -0.0057666 0.0001806"
+      rpy="0 -0.0012613 0.0042746" />
+    <parent
+      link="finger_3_1_link" />
+    <child
+      link="finger_3_2_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_4_1_link">
+    <inertial>
+      <origin
+        xyz="0.0162572835368526 -0.00488302852921883 0.00876761711946435"
+        rpy="0 0 0" />
+      <mass
+        value="0.00536275852663386" />
+      <inertia
+        ixx="1.791468653917E-07"
+        ixy="-2.87789686177151E-08"
+        ixz="-1.16140355438827E-10"
+        iyy="8.24470908744062E-07"
+        iyz="-4.21616914432381E-11"
+        izz="7.19548201354324E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_4_1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_4_1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_4_1_joint"
+    type="revolute">
+    <origin
+      xyz="-0.018403 0.096698 -0.0098321"
+      rpy="1.5708 -0.00042798 1.6579" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger_4_1_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_4_2_link">
+    <inertial>
+      <origin
+        xyz="0.0133228563921335 -0.00269242367370009 0.00851071523128341"
+        rpy="0 0 0" />
+      <mass
+        value="0.00192260099119397" />
+      <inertia
+        ixx="4.98177703314545E-08"
+        ixy="-7.96700117493705E-09"
+        ixz="-1.13968241920613E-10"
+        iyy="1.722974760862E-07"
+        iyz="-2.75501416152075E-11"
+        izz="1.34088414416626E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_4_2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_4_2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_4_2_joint"
+    type="revolute">
+    <origin
+      xyz="0.038006 -0.00098201 0.00014384"
+      rpy="0 0 0" />
+    <parent
+      link="finger_4_1_link" />
+    <child
+      link="finger_4_2_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_5_1_link">
+    <inertial>
+      <origin
+        xyz="0.0128798398675625 -0.00471975930859924 0.00876548377393719"
+        rpy="0 0 0" />
+      <mass
+        value="0.00416066056784568" />
+      <inertia
+        ixx="1.41371201366001E-07"
+        ixy="-1.69713132500434E-08"
+        ixz="-1.36203315552671E-10"
+        iyy="4.91989328741884E-07"
+        iyz="-2.58417120020823E-11"
+        izz="4.06362788536599E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_5_1_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_5_1_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_5_1_joint"
+    type="revolute">
+    <origin
+      xyz="-0.037203 0.093477 -0.0098321"
+      rpy="1.5708 0.00025799 1.7459" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger_5_1_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+  <link
+    name="finger_5_2_link">
+    <inertial>
+      <origin
+        xyz="0.012259989141427 -0.00275635133880762 0.00848936365240834"
+        rpy="0 0 0" />
+      <mass
+        value="0.0017693580256634" />
+      <inertia
+        ixx="4.65085538075321E-08"
+        ixy="-6.48709824111738E-09"
+        ixz="-5.90074748569474E-12"
+        iyy="1.41496013295727E-07"
+        iyz="-2.63789124495209E-11"
+        izz="1.05748957325757E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_5_2_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger_5_2_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger_5_2_joint"
+    type="revolute">
+    <origin
+      xyz="0.031007 -0.0010094 9.0267E-05"
+      rpy="0 0 0" />
+    <parent
+      link="finger_5_1_link" />
+    <child
+      link="finger_5_2_link" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="1.57"
+      effort="1.57"
+      velocity="1.57" />
+  </joint>
+</robot>

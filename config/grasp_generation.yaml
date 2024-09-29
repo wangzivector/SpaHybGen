@@ -1,0 +1,34 @@
+robot_a:
+    hand_name: "leaphand" # robotiq2f finray2f finray4f softpneu3f robotiq3f brunelhand
+    robot_id: "ur5e/"
+    pose_init: [-1, -2, 2.3, -1.89, -1.57, -2.6]
+    pose_drop_id: drop_point_ur5e 
+
+sensor:
+    camera_id: "fixed/"
+    depth_topic: '/depth_to_rgb/image_raw'
+    caminfo_topic: '/depth_to_rgb/camera_info'
+    grid_topic: '/grid_raw'
+    grid_request_topic: '/grid_request'
+    voxel_disc: 80
+    grid_length: 0.4
+    grid_type: 'voxel'
+    visualize_grid: True
+
+inference:
+    visual_inference: True
+    ori_type: 'quat'
+    infer_topic: '/infer_result'
+    model_path: './spahybgen/data/runs/.../spahybgen_unet_100.pt'
+
+optimization:
+    hand_scale: 1.0
+    opti_rate: 1.0e-3
+    opti_batches: 48
+    opti_max_iter: 200 
+    tip_downsample: 0.7
+    wrench_downsample: 0.9
+    focal_ratio: 0.1
+    penetration_mode: 'contact_penetration'
+    pent_check_split: 0.8
+    save_optimization: 'SAVE' # NONE ONLINE OFFLINE ONOFFLINE SAVE

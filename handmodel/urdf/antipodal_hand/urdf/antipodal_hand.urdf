@@ -1,0 +1,163 @@
+<!-- <?xml version="1.0" encoding="utf-8"?> -->
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="antipodal_hand">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.032222 -1.2256E-17 1.6465E-18"
+        rpy="0 0 0" />
+      <mass
+        value="0.072" />
+      <inertia
+        ixx="0.0001392"
+        ixy="5.9667E-22"
+        ixz="-2.5621E-22"
+        iyy="7.6444E-06"
+        iyz="-1.4017E-21"
+        izz="0.00014204" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="finger1">
+    <inertial>
+      <origin
+        xyz="-0.0096205 -0.040361 -2.0368E-19"
+        rpy="0 0 0" />
+      <mass
+        value="0.0332" />
+      <inertia
+        ixx="1.8649E-05"
+        ixy="1.2145E-07"
+        ixz="1.4978E-23"
+        iyy="2.301E-06"
+        iyz="-1.859E-22"
+        izz="1.8737E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger1_joint"
+    type="prismatic">
+    <origin
+      xyz="-0.02 -0.06 0"
+      rpy="0 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger1" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0.06"
+      effort="1"
+      velocity="1" />
+  </joint>
+  <link
+    name="finger2">
+    <inertial>
+      <origin
+        xyz="-0.0096205 -0.040361 1.9496E-19"
+        rpy="0 0 0" />
+      <mass
+        value="0.0332" />
+      <inertia
+        ixx="1.8649E-05"
+        ixy="1.2145E-07"
+        ixz="2.6612E-23"
+        iyy="2.301E-06"
+        iyz="-9.3832E-23"
+        izz="1.8737E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="finger2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="finger2_joint"
+    type="prismatic">
+    <origin
+      xyz="-0.02 0.06 0"
+      rpy="3.1416 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="finger2" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0.06"
+      effort="1"
+      velocity="1" />
+  </joint>
+</robot>
