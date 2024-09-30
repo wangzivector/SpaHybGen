@@ -17,13 +17,15 @@ from spahybgen.utils import utils_dataio
 from spahybgen.utils.utils_trans_np import Transform
 import spahybgen.observation as ObsEng
 
-sceneIds_task = [100, 190, 1]
+sceneIds_task = [0, 100, 1]
+# sceneIds_task = [100, 190, 1] For test data
 annIds_task = [0, 256, 4]
 
 TSDF_volume_size, TSDF_discreteness = 0.4, 80
 
 graspnet_root = Path("/home/smarnlab/SpatialHybridGen/Graspnet")
-generate_root = Path("/home/smarnlab/SpatialHybridGen/spahybgen/dataset/test")
+generate_root = Path("/home/smarnlab/SpatialHybridGen/spahybgen/dataset/train")
+# generate_root = Path("/home/smarnlab/SpatialHybridGen/spahybgen/dataset/test") For test data
 
 print("Graspnet: {} \nResult: {}".format(graspnet_root.absolute(), generate_root.absolute()))
 

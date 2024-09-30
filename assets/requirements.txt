@@ -1,0 +1,25 @@
+catkin_pkg
+catkin-pkg-modules
+rospkg-modules
+rospkg
+empy
+black
+# jupyterlab
+numpy
+scipy
+pandas
+# matplotlib
+mpi4py
+open3d
+# pybullet==2.7.9
+torch
+pytorch-ignite
+tensorboard
+tqdm
+torchsummary
+future
+einops
+pytorch_kinematics
+mujoco
+
+# sudo apt-get install ros-melodic-ros-numpy
