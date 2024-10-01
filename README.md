@@ -23,7 +23,7 @@ SpaHybGen Generates grasp poses for general grippers in SE(3) clutter scenes usi
   </div>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
-      <figcaption><b>Video: Grasping performance for seven robotic hands</b></figcaption>
+      <figcaption><b>Video: Actual grasping for seven robotic hands</b></figcaption>
     </a>
   </div>
 </figure>
@@ -57,28 +57,38 @@ source /path/to/catkin_ws/devel/setup.sh
 
 
 ## Dataset Generation
-We release the generated contact dataset in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing).
-If researchers expect to generate it with [GraspNet-1Billion](https://graspnet.net/datasets.html), please download the full GraspNet-1Billion dataset and run the following command:
+<div align="center">
+  <img src="assets/dataset_generation.png" width="85%" title="dataset_generation">
+</div>
+
+We release the generated contact dataset in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing). It includes 4.5 GB training data and 4.2 GB test data. 
+
+If researchers expect to generate the contact dataset, please download the full [GraspNet-1Billion](https://graspnet.net/datasets.html) dataset and run the following command:
 ```bash
 python scripts/generate_dataset.py 
 ```
 It will take tens of hours for the generation process (currently we have not parallelized it). Detail descriptions of the contact generation are found in [scripts/generate_dataset.py](scripts/generate_dataset.py).
 
-The contact dataset should be placed inside a `dataset` folder as: `spahybgen\dataset\train`.
+The contact dataset should be placed inside a `dataset` folder as: `spahybgen\dataset\train\scene_0000`.
 
 ## Network Training 
-To train a 3D U-Net using the generated contact dataset, run:
+<div align="center">
+  <img src="assets/contact_inference.png" width="85%" title="contact_inference">
+</div>
+
+To train a 3D U-Net using the generated contact dataset, please run command:
+
 ```bash
 python scripts/train_shgn.py --dataset dataset/train/ --net unet --orientation quat --gridtype voxel --batch-size 4 --numsample 3000 --epochs 64 --loaders 10 --gridtype voxel
 ```
 
 The training logs and models are stored at `data/runs/`.
 
-To facilitate reproduction, two trained models are also shared in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) and [assets/trained_models/](assets/trained_models/). 
-It contains two networks oriented to Voxel and TSDF input observations.
+To facilitate reproduction, two trained models are also shared in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) and [assets/trained_models/](assets/trained_models/), which contains two networks oriented to Voxel and TSDF input observations.
 
 ## Pipeline: Grasp Generation
-The **grasp generation** process includes `1.scene observation`, `2.contact inference`, and `3.grasp optimization`. We elaborate on these three parts below:
+The process of **grasp generation** includes `1.scene observation`, `2.contact inference`, `3.hand model` and `4.grasp optimization`.
+
 ### 1. Scene Observation
 We enable two formats (Voxel and TSDF) as the scene observation in actual grasping tasks. To obtain observation, one can refer to the generated (downloaded) contact dataset in folder `spahybgen/dataset/`, where the `.npz` files are observations for grasping scenes in GraspNet-1Billion. 
 Alternatively, practitioners capture scene volumes using a depth sensor, following the sensing pipeline at [src/spahybgen/pipeline/sensor_server.py](src/spahybgen/pipeline/sensor_server.py). 
@@ -88,7 +98,18 @@ Alternatively, practitioners capture scene volumes using a depth sensor, followi
 With the `trained model` and obtained `observation`, dense contact features can be reasoned before grasp optimization.
 > If you want to individually test the `contact inference` module, run `python scripts/contact_inference_test.py`. It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
 
-### 3. Grasp Optimization
+### 3. Hand Model
+More than ten robotic hands are released in folder [\handmodel](\handmodel).
+To construct a custom gripper in compatible format, please check these hand examples. Generally, one hand model can be generated within the following steps:
+
+(1). Prepare the standard URDF file for the targeted robotic hand. The `CAD filepath` and `xml encoding information` in .urdf should be properly modified to match the code (the targeted format refer to hand examples).
+
+(2). Assign contact regions to the hand surface using the tool in [scripts/hand_contacts.ipynb](scripts/hand_contacts.ipynb).
+
+(3). Append information of the custom hand to file [handmodel/hand_infos.json](handmodel/hand_infos.json), following the included format.
+
+
+### 4. Grasp Optimization
 With the inferred `contact features` and established [hand model](handmodel/), grasp optimization is parallelized using [Pytorch_kinematics](https://github.com/UM-ARM-Lab/pytorch_kinematics).
 > If you want to individually test the `grasp optimization` module, download the `std_inference_result_from_clutter.npy` from [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) to the folder `assets\`. Then run `python scripts/grasp_optimization_test.py`. 
 
