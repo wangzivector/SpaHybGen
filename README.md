@@ -3,6 +3,8 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
 
 > It is feasible to use your own robotic hands **without** dataset generation and contact training. To immediately use any grippers, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting up the [Code Environment](#code-environment)).
 
+<br>
+
 <figure>
   <div align="center">
     <img src="assets/images/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
@@ -12,7 +14,6 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
   </div>
 </figure>
 
-<br>
 <br>
 
 <figure>
@@ -27,7 +28,6 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
     </a>
   </div>
 </figure>
-
 
 ## Code Environment
 We use Python 3.8 in Conda to train 3D U-Net, infer contacts, and optimize grasps.
@@ -98,7 +98,13 @@ Alternatively, practitioners capture scene volumes using a depth sensor, followi
 
 ### 2. Contact Inference
 With the `trained model` and obtained `observation`, dense contact features can be reasoned before grasp optimization.
-> If you want to individually test the `contact inference` module, please run `python scripts/contact_inference_test.py`. It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
+
+Note: If you want to individually test the `contact inference` module, please run:
+```bash
+python scripts/contact_inference_test.py
+```
+
+It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
 
 ### 3. Hand Model
 More than ten robotic hands are released in folder [\handmodel](\handmodel).
@@ -113,14 +119,20 @@ To construct a custom gripper in compatible format, please check these hand exam
 
 ### 4. Grasp Optimization
 With the inferred `contact features` and established [hand model](handmodel/), grasp optimization is parallelized using [Pytorch_kinematics](https://github.com/UM-ARM-Lab/pytorch_kinematics).
-> If you want to individually test the `grasp optimization` module, download the `std_inference_result_from_clutter.npy` from [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) to the folder `assets\`. Then run `python scripts/grasp_optimization_test.py`. 
+
+Note: If you want to individually test the `grasp optimization` module, download the `std_inference_result_from_clutter.npy` from [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) to the folder `assets\`. Then run:
+```bash
+python scripts/grasp_optimization_test.py
+``` 
+It will optimize grasps using Robotiq-2F and visualize the results using Web-based Plotly.
+
 
 ### **Full Pipeline**
-To run the full generation pipeline without hardware, please directly run (using the default observation file and trained model contained in folder [assets/](assets/)):
+To run the full algorithmic pipeline without hardware (using the default observation file and trained model contained in folder [assets/](assets/)), please directly run:
 ```bash
 python scripts/generation_pipeline_test.py
 ```
-It will optimize grasps using Robotiq-2F and visualize the results using Web-based Plotly.
+This script is a combination of [2. Contact Inference](#2-contact-inference) and [4. Grasp Optimization](#4-grasp-optimization). Similarly, it will optimize grasps using Robotiq-2F and visualize the results using Web-based Plotly.
 
 
 ## Actual Grasping
@@ -142,7 +154,7 @@ It will optimize grasps using Robotiq-2F and visualize the results using Web-bas
 > To enable ROS1 in Python3, please follow [Coding_Instruction](https://github.com/wangzivector/Coding_Instruction/blob/master/ROS_python3.md) to make `import rospy` and `import tf2_ros` working in python3.
 
 ## Cite
-This research is under review.
+This research is not published.
 
 ## Acknowledge
 This project is inspired by the excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
