@@ -3,17 +3,29 @@ SpaHybGen Generates grasp poses for general grippers in SE(3) clutter scenes usi
 
 > It is feasible to use your own robotic hands **without** steps of dataset generation and contact training. To immediately use any grippers, directly see [Pipeline: Grasp Generation](#pipeline-grasp-generation) (of course, after setting up the [Code Environment](#code-environment)).
 
-<figure align="center">
-  <img src="assets/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
-  <figcaption><b>Pipeline of SpaHybGen</b></figcaption>
+<figure>
+  <div align="center">
+    <img src="assets/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
+  </div>
+  <div align="center">
+    <figcaption><b>Pipeline of SpaHybGen</b></figcaption>
+  </div>
 </figure>
 
+<br>
+<br>
 
-<figure align="center">
-  <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
-      <img src="https://img.youtube.com/vi/fSxkLJ2piVI/0.jpg" style="width:85%;" title="Grasping performance for seven robotic hands">
-  </a>
-  <figcaption><b>Video: Grasping performance for seven robotic hands</b></figcaption>
+<figure>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
+      <img src="https://img.youtube.com/vi/fSxkLJ2piVI/0.jpg" width="85%" title="Grasping performance for seven robotic hands">
+    </a>
+  </div>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
+      <figcaption><b>Video: Grasping performance for seven robotic hands</b></figcaption>
+    </a>
+  </div>
 </figure>
 
 
@@ -35,12 +47,13 @@ export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True # for sklearn packa
 pip install graspnetAPI # for Graspnet Dataset
 ```
 
-3. Build and source the catkin workspace, or alternatively install the project locally in "editable" mode using pip: `pip install -e .` install of the following lines:
+2. Build and source the catkin workspace, or alternatively install the project locally in "editable" mode using pip: `pip install -e .` install of the following lines:
 ```bash
 catkin build spahybgen
 source /path/to/catkin_ws/devel/setup.sh
 ```
-4. We understand that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions are probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for debugging.
+
+> We realize that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions are probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for debugging.
 
 
 ## Dataset Generation
@@ -88,11 +101,14 @@ It will optimize grasps using Robotiq-2F and visualize the results using Web-bas
 
 
 ## Actual Grasping
-In our actual grasping experiments, ROS Melodic is used to coordinate the UR-5e, Azure RGB-D camera, and multiple robotic hands. To facilitate a fast setup of the actual grasping framework, we released the ROS-based communication interfaces of all devices and algorithm modules, as in the folder [src/spahybgen/pipeline/](src/spahybgen/pipeline/).
-Practitioners are expected to set up the custom hardware with ROS and modify their specific ROS topics in different files (camera: [config/grasp_generation.yaml](config/grasp_generation.yaml); robot arm:[src/spahybgen/pipeline/pose_node.py](src/spahybgen/pipeline/pose_node.py); robotic hands: [src/spahybgen/pipeline/gripper_node.py](src/spahybgen/pipeline/gripper_node.py)). Then, [scripts/realrobot_execution.py](scripts/realrobot_execution.py) details a single-gripper grasping pipeline which includes hardware execution.
+- In our actual grasping experiments, ROS Melodic is used to coordinate the UR-5e, Azure RGB-D camera, and multiple robotic hands. To facilitate a fast setup of the actual grasping framework, we released the ROS-based communication interfaces of all devices and algorithm modules, as in the folder [src/spahybgen/pipeline/](src/spahybgen/pipeline/).
+
+- Practitioners are expected to set up the custom hardware with ROS and modify their specific ROS topics in different files (camera: [config/grasp_generation.yaml](config/grasp_generation.yaml); robot arm:[src/spahybgen/pipeline/pose_node.py](src/spahybgen/pipeline/pose_node.py); robotic hands: [src/spahybgen/pipeline/gripper_node.py](src/spahybgen/pipeline/gripper_node.py)). 
+
+- Finally, [scripts/realrobot_execution.py](scripts/realrobot_execution.py) details a single-gripper grasping pipeline which includes hardware execution.
 
 > To enable ROS1 in Python3, please follow [Coding_Instruction](https://github.com/wangzivector/Coding_Instruction/blob/master/ROS_python3.md) to make `import rospy` and `import tf2_ros` working in python3.
 
 
 ## Acknowledge
-> This project is inspired by several excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
+This project is inspired by the following excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
