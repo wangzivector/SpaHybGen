@@ -18,7 +18,7 @@ SpaHybGen Generates grasp poses for general grippers in SE(3) clutter scenes usi
 <figure>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
-      <img src="https://img.youtube.com/vi/fSxkLJ2piVI/0.jpg" width="85%" title="Grasping performance for seven robotic hands">
+      <img src="assets/general-clutter.jpg" width="85%" title="Grasping performance for seven robotic hands">
     </a>
   </div>
   <div align="center">
