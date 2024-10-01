@@ -101,6 +101,15 @@ It will optimize grasps using Robotiq-2F and visualize the results using Web-bas
 
 
 ## Actual Grasping
+<figure>
+  <div align="center">
+    <img src="assets/devices.png" width="90%" title="">
+  </div>
+  <div align="center">
+    <figcaption><b>Used devices in actual grasping</b></figcaption>
+  </div>
+</figure>
+
 - In our actual grasping experiments, ROS Melodic is used to coordinate the UR-5e, Azure RGB-D camera, and multiple robotic hands. To facilitate a fast setup of the actual grasping framework, we released the ROS-based communication interfaces of all devices and algorithm modules, as in the folder [src/spahybgen/pipeline/](src/spahybgen/pipeline/).
 
 - Practitioners are expected to set up the custom hardware with ROS and modify their specific ROS topics in different files (camera: [config/grasp_generation.yaml](config/grasp_generation.yaml); robot arm:[src/spahybgen/pipeline/pose_node.py](src/spahybgen/pipeline/pose_node.py); robotic hands: [src/spahybgen/pipeline/gripper_node.py](src/spahybgen/pipeline/gripper_node.py)). 
