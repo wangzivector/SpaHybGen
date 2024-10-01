@@ -17,13 +17,13 @@ if __name__ == '__main__':
     robot_name, hand_scale, init_rand_scale = 'robotiq2f', 1.0, 0.2
 
     tb_writer = None
-    logs_basedir = 'data/graspoti'
+    logs_basedir = 'data/grasp_otimization'
     time_stamp = datetime.now().strftime("%m-%d-%H-%M")
     tb_dir = os.path.join(logs_basedir, time_stamp)
     tb_writer = SummaryWriter(tb_dir)
     
     inferred_result = np.load('assets/std_inference_result_from_clutter.npy')
-    result_filedir = 'assets/'
+    result_filedir = 'data/'
     visulize_mode='ONLINE'
 
     batch_size = 48

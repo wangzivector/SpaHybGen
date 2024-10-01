@@ -20,7 +20,7 @@ if __name__ == "__main__":
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     ntargs = {"voxel_discreteness": grid_discreteness, "orientation": 'quat', "augment": False}
-
+    print("loading network: {}".format(model))
     net = load_network(model, device, ntargs)
     qual_vol, rot_vol, wren_vol = Inference.predict(grid_volume, net, device)
     qual_vol_pro, rot_vol_pro, wren_vol_pro = Inference.process(qual_vol, rot_vol, wren_vol, gaussian_filter_sigma=0)

@@ -1,11 +1,11 @@
 # SpaHybGen: Scene-Level Spatial Grasp Generation for General Robotic Hands
-SpaHybGen Generates grasp poses for general grippers in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
+SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
 
-> It is feasible to use your own robotic hands **without** steps of dataset generation and contact training. To immediately use any grippers, directly see [Pipeline: Grasp Generation](#pipeline-grasp-generation) (of course, after setting up the [Code Environment](#code-environment)).
+> It is feasible to use your own robotic hands **without** dataset generation and contact training. To immediately use any grippers, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting up the [Code Environment](#code-environment)).
 
 <figure>
   <div align="center">
-    <img src="assets/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
+    <img src="assets/images/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
   </div>
   <div align="center">
     <figcaption><b>Pipeline of SpaHybGen</b></figcaption>
@@ -18,7 +18,7 @@ SpaHybGen Generates grasp poses for general grippers in SE(3) clutter scenes usi
 <figure>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=fSxkLJ2piVI">
-      <img src="assets/general-clutter.jpg" width="85%" title="Grasping performance for seven robotic hands">
+      <img src="assets/images/general-clutter.jpg" width="85%" title="Grasping performance for seven robotic hands">
     </a>
   </div>
   <div align="center">
@@ -50,30 +50,32 @@ pip install graspnetAPI # for Graspnet Dataset
 2. Build and source the catkin workspace, or alternatively install the project locally in "editable" mode using pip: `pip install -e .` install of the following lines:
 ```bash
 catkin build spahybgen
-source /path/to/catkin_ws/devel/setup.sh
+source /path to catkin_ws/devel/setup.sh
 ```
 
-> We realize that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions are probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for debugging.
+> We realize that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions may be probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for reference.
 
 
 ## Dataset Generation
 <div align="center">
-  <img src="assets/dataset_generation.png" width="85%" title="dataset_generation">
+  <img src="assets/images/dataset_generation.png" width="85%" title="dataset_generation">
 </div>
 
-We release the generated contact dataset in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing). It includes 4.5 GB training data and 4.2 GB test data. 
+We release the generated contact dataset in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing). It includes 4.5GB training data and 4.2GB test data. 
 
 If researchers expect to generate the contact dataset, please download the full [GraspNet-1Billion](https://graspnet.net/datasets.html) dataset and run the following command:
 ```bash
 python scripts/generate_dataset.py 
 ```
-It will take tens of hours for the generation process (currently we have not parallelized it). Detail descriptions of the contact generation are found in [scripts/generate_dataset.py](scripts/generate_dataset.py).
+It will take tens of hours for the generation process (currently we have not parallelized it). 
+
+Detailed descriptions of the contact generation process are presented in [scripts/generate_dataset.py](scripts/generate_dataset.py).
 
 The contact dataset should be placed inside a `dataset` folder as: `spahybgen\dataset\train\scene_0000`.
 
 ## Network Training 
 <div align="center">
-  <img src="assets/contact_inference.png" width="85%" title="contact_inference">
+  <img src="assets/images/contact_inference.png" width="85%" title="contact_inference">
 </div>
 
 To train a 3D U-Net using the generated contact dataset, please run command:
@@ -96,13 +98,13 @@ Alternatively, practitioners capture scene volumes using a depth sensor, followi
 
 ### 2. Contact Inference
 With the `trained model` and obtained `observation`, dense contact features can be reasoned before grasp optimization.
-> If you want to individually test the `contact inference` module, run `python scripts/contact_inference_test.py`. It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
+> If you want to individually test the `contact inference` module, please run `python scripts/contact_inference_test.py`. It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
 
 ### 3. Hand Model
 More than ten robotic hands are released in folder [\handmodel](\handmodel).
 To construct a custom gripper in compatible format, please check these hand examples. Generally, one hand model can be generated within the following steps:
 
-(1). Prepare the standard URDF file for the targeted robotic hand. The `CAD filepath` and `xml encoding information` in .urdf should be properly modified to match the code (the targeted format refer to hand examples).
+(1). Prepare the standard URDF file for the targeted robotic hand. The `CAD filepath` and `xml encoding information` in .urdf should be properly modified to match the code (for the targeted format, please refer to the released hand examples).
 
 (2). Assign contact regions to the hand surface using the tool in [scripts/hand_contacts.ipynb](scripts/hand_contacts.ipynb).
 
@@ -124,7 +126,7 @@ It will optimize grasps using Robotiq-2F and visualize the results using Web-bas
 ## Actual Grasping
 <figure>
   <div align="center">
-    <img src="assets/devices.png" width="90%" title="">
+    <img src="assets/images/devices.png" width="90%" title="">
   </div>
   <div align="center">
     <figcaption><b>Used devices in actual grasping</b></figcaption>
@@ -139,6 +141,8 @@ It will optimize grasps using Robotiq-2F and visualize the results using Web-bas
 
 > To enable ROS1 in Python3, please follow [Coding_Instruction](https://github.com/wangzivector/Coding_Instruction/blob/master/ROS_python3.md) to make `import rospy` and `import tf2_ros` working in python3.
 
+## Cite
+This research is under review.
 
 ## Acknowledge
-This project is inspired by the following excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
+This project is inspired by the excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
