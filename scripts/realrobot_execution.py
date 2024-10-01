@@ -1,6 +1,5 @@
 import os
 import rospy
-import random
 from datetime import datetime
 from spahybgen.pipeline.param_server import GraspParameter
 from spahybgen.pipeline.sensor_server import SensorClient
