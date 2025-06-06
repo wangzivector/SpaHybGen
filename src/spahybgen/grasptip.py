@@ -1,3 +1,5 @@
+# Inherent from [VGN](https://github.com/ethz-asl/vgn)
+
 import numpy as np
 import pandas as pd
 from spahybgen.utils.utils_trans_np import Transform, Rotation, weighted_average_quaternions
@@ -148,13 +150,17 @@ def Tips2TipsDF(tips_data, volume_size, grid_size, interp_ratios = [0.2, 1.0], s
                 # update count
                 new_count = count_curr + 1
                 # update mean score
-                new_score = score_curr + (score - score_curr)/new_count
+                new_score = score_curr + (score - score_curr) / new_count
                 # update tip label
+
+                # WE DISCARD THE TIP LABEL BUT TO CALCULATE THE COSINE SIMILARITY BETWEEN NEW-TIP-DIRECTION AND PREVIOUS AVERAGED TIP-DIRECTION
+                # ALSO THIS IS A SEQUENCE-VARIED SOLUTION (THE RESULTS CAN BE AFFECTED BY THE SEQUENTIAL ORDER OF THE TIP LIST)
+                tip_label = (np.sum(Rotation.from_quat(rotation_curr).apply([0, 0, 1]) * Rotation.from_quat(rotation).apply([0, 0, 1])) + 1)/2 # [-1, 1] -> [0, 1]
                 new_tip_label = tip_label_curr + (tip_label - tip_label_curr) / new_count
                 # update quaterion
                 new_rotation = weighted_average_quaternions(np.vstack([rotation_curr, rotation]), [count_curr, 1])
             else:
-                new_count, new_score, new_rotation, new_tip_label = 1, score, rotation, tip_label
+                new_count, new_score, new_rotation, new_tip_label = 1, score, rotation, 1
             generate_labels.loc[tsdf_index] = np.hstack([new_count, new_score, new_rotation, new_tip_label])
             dist_curr += voxel_size
 

@@ -58,12 +58,14 @@ class TSDFVolume(object):
     def get_grid(self):
         cloud = self._volume.extract_voxel_point_cloud()
         points = np.asarray(cloud.points)
-        distances = np.asarray(cloud.colors)[:, [0]]
-        grid = np.zeros((1, self.resolution, self.resolution, self.resolution), dtype=np.float32)
-        for idx, point in enumerate(points):
-            i, j, k = np.floor(point / self.voxel_size).astype(int)
-            grid[0, i, j, k] = distances[idx]
-        return grid
+        distances = np.asarray(cloud.colors)[:, 0]
+        grid = np.zeros((self.resolution, self.resolution, self.resolution), dtype=np.float32)
+        voxelinds = np.floor(points / self.voxel_size).astype(int)
+        grid[voxelinds[:,0], voxelinds[:,1], voxelinds[:,2]] = distances
+        # for idx, point in enumerate(points):
+        #     i, j, k = np.floor(point / self.voxel_size).astype(int)
+        #     grid[0, i, j, k] = distances[idx]
+        return np.expand_dims(grid, axis=0)
 
     def get_cloud(self):
         return self._volume.extract_point_cloud()

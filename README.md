@@ -1,32 +1,66 @@
 # SpaHybGen: Scene-Level Spatial Grasp Generation for General Robotic Hands
 SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
 
-> It is feasible to use your own robotic hands **without** dataset generation and contact training. To immediately use any grippers, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting up the [Code Environment](#code-environment)).
+> It is feasible to use your own robotic hands **without** [Contact Dataset Generation](#Contact-Dataset-Generation) and [Contact Training](#Contact-Training). To immediately use your cunstom robotic hands, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting up the [Code Environment](#code-environment)).
 
 <br>
 
 <figure>
   <div align="center">
-    <img src="assets/images/pipeline.png" width="85%" title="Pipeline of SpaHybGen">
+    <img src="assets/images/pipeline.jpg" width="85%" title="Pipeline of SpaHybGen">
   </div>
   <div align="center">
-    <figcaption><b>Pipeline of SpaHybGen</b></figcaption>
+    <figcaption><b>SpaHybGen</b></figcaption>
   </div>
 </figure>
 
-<br>
+## Demonstration
+### 1. Semi-cluttered grasping for seven robotic hands
+
 <figure>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <img src="assets/images/general-clutter.jpg" width="85%" title="Grasping performance for seven robotic hands">
+      <img src="assets/images/general-semi-ver.jpg" width="65%" title="Grasping performance for seven robotic hands">
+    </a>
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <figcaption><b>Video: Semi-cluttered grasping with seven robotic hands and multi-gripper simultaneous grasping</b></figcaption>
+    </a>
+  </div>
+</figure>
+
+### 2. Multi-gripper simultaneous grasping
+<figure>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <img src="assets/images/multigraspshardware.jpg" width="65%" title="Grasping performance for seven robotic hands">
     </a>
   </div>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <figcaption><b>Video: Actual grasping for seven robotic hands</b></figcaption>
+      <figcaption><b>Video: Multi-gripper simultaneous grasping</b></figcaption>
     </a>
   </div>
 </figure>
+
+
+### 3. Dynamic grasp update in dense clutter grasping
+
+<figure>
+  <div align="center">
+    <a>
+      <img src="assets/images/dynamic-hardware-c.jpg" width="75%" title="Dynamic grasping setup">
+    </a>
+    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
+      <img src="assets/images/dynamic-leap.jpg" width="75%" title="Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)">
+    </a>
+  </div>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
+      <figcaption><b>Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)</b></figcaption>
+    </a>
+  </div>
+</figure>
+
 
 ## Code Environment
 We use Python 3.8 in Conda to train 3D U-Net, infer contacts, and optimize grasps.
@@ -55,9 +89,9 @@ source /path to catkin_ws/devel/setup.sh
 > We realize that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions may be probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for reference.
 
 
-## Dataset Generation
+## Contact Dataset Generation
 <div align="center">
-  <img src="assets/images/dataset_generation.png" width="85%" title="dataset_generation">
+  <img src="assets/images/dataset_generation.jpg" width="85%" title="dataset_generation">
 </div>
 
 We release the generated contact dataset in [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing). It includes 4.5GB training data and 4.2GB test data. 
@@ -72,9 +106,9 @@ Detailed descriptions of the contact generation process are presented in [script
 
 The contact dataset should be placed inside a `dataset` folder as: `spahybgen\dataset\train\scene_0000`.
 
-## Network Training 
+## Contact Training 
 <div align="center">
-  <img src="assets/images/contact_inference.png" width="85%" title="contact_inference">
+  <img src="assets/images/contact_inference.jpg" width="85%" title="contact_inference">
 </div>
 
 To train a 3D U-Net using the generated contact dataset, please run command:
@@ -137,7 +171,7 @@ This script is a combination of [2. Contact Inference](#2-contact-inference) and
 ## Actual Grasping
 <figure>
   <div align="center">
-    <img src="assets/images/devices.png" width="90%" title="">
+    <img src="assets/images/devices.jpg" width="90%" title="">
   </div>
   <div align="center">
     <figcaption><b>Used devices in actual grasping</b></figcaption>

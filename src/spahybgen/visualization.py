@@ -5,10 +5,10 @@ import numpy as np
 import rospy
 
 
-def visualize_grid(grid, frame_id = 'grid_ws', grid_length=0.4, voxel_disc=80):
+def visualize_grid(grid, frame_id = 'grid_ws', grid_length=0.4, voxel_disc=80, threshold=0.1, pose=None):
     ut_vis.clear_grid(frame_id)
-    ut_vis.draw_workspace(grid_length, frame=frame_id)
-    ut_vis.draw_grid(grid, grid_size=grid_length/voxel_disc, threshold=0.5, frame_id=frame_id)
+    ut_vis.draw_workspace(grid_length, frame=frame_id, pose=pose)
+    ut_vis.draw_grid(grid, grid_size=grid_length/voxel_disc, threshold=threshold, frame_id=frame_id)
 
 
 def visualize_inference(prediction, voxel_size, threshold):

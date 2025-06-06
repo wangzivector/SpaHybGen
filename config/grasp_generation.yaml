@@ -19,7 +19,7 @@ inference:
     visual_inference: True
     ori_type: 'quat'
     infer_topic: '/infer_result'
-    model_path: './spahybgen/data/runs/.../spahybgen_unet_100.pt'
+    model_path: './spahybgen/assets/trained_models/spahybgen_unet_64_voxel.pt'
 
 optimization:
     hand_scale: 1.0
