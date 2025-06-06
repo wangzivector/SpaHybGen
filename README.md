@@ -7,7 +7,7 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
 
 <figure>
   <div align="center">
-    <img src="assets/images/pipeline.jpg" width="85%" title="Pipeline of SpaHybGen">
+    <img src="assets/images/pipeline.jpg" width="95%" title="Pipeline of SpaHybGen">
   </div>
   <div align="center">
     <figcaption><b>SpaHybGen</b></figcaption>
@@ -15,13 +15,15 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
 </figure>
 
 ## Demonstration
-### 1. Semi-cluttered grasping for seven robotic hands
+### 1. Semi-cluttered grasping with seven robotic hands
 
 <figure>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <img src="assets/images/general-semi-ver.jpg" width="65%" title="Grasping performance for seven robotic hands">
+      <img src="assets/images/general-semi-ver.jpg" width="75%" title="Grasping performance for seven robotic hands">
     </a>
+    </div>
+    <div align="center">
     <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
       <figcaption><b>Video: Semi-cluttered grasping with seven robotic hands and multi-gripper simultaneous grasping</b></figcaption>
     </a>
@@ -32,7 +34,7 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
 <figure>
   <div align="center">
     <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <img src="assets/images/multigraspshardware.jpg" width="65%" title="Grasping performance for seven robotic hands">
+      <img src="assets/images/multigraspshardware.jpg" width="75%" title="">
     </a>
   </div>
   <div align="center">
@@ -50,6 +52,8 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
     <a>
       <img src="assets/images/dynamic-hardware-c.jpg" width="75%" title="Dynamic grasping setup">
     </a>
+  </div>
+  <div align="center">
     <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
       <img src="assets/images/dynamic-leap.jpg" width="75%" title="Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)">
     </a>
