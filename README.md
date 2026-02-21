@@ -19,7 +19,7 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 ## Maintain schemes
 ### 📦 Changelog
 
-#### 2025-02-20
+#### 2026-02-20
 - Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
 
 ### ✅ Planned Features
