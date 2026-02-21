@@ -203,7 +203,7 @@ def _create_cube_mesh(x, y, z):
         [0, 1, 0, 1, 0, 6, 2, 7, 4, 7, 1, 7],
         [1, 2, 1, 4, 2, 2, 3, 3, 5, 5, 3, 3],
         [2, 3, 4, 5, 4, 4, 6, 6, 6, 6, 5, 5]
-    ]).T
+    ]).T # Box vertice indices
 
     return np.array(vertices), faces
 

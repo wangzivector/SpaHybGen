@@ -140,7 +140,6 @@ class GraspOptNodeInstance(object):
     def conduct_grasp_optimization(self, grasp_optimization, inference):
         tic = time.time()
         cam_appr_vector = [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
-        # Temp for multi
 
         q_trajectory, loss_dict = grasp_optimization.run_optimization(
             scene_infer_map = inference, 

@@ -364,11 +364,26 @@ class HandModel:
 
     @property
     def _sample_contact_points(self):
-        if len(self.contact_point_basis) <= 3: # few contacts, 9 point samples
-            return torch.tensor([[0.2, 0, 0.8, 0], [0, 0.2, 0, 0.8], [0, 0.8, 0, 0.2], [0.8, 0, 0.2, 0], [0.5, 0.5, 0, 0], 
-                [0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0, 0.5, 0, 0.5], [0, 0, 0.5, 0.5]]).float().to(self.device)
-        else: # too much contacts/links # 5 point samples
-            return torch.tensor([[0.2, 0, 0.8, 0], [0, 0.2, 0, 0.8], [0, 0.8, 0, 0.2], [0.8, 0, 0.2, 0], [0, 0.5, 0, 0.5]]).float().to(self.device)
+        rich_interpolate_thres = 3
+        if len(self.contact_point_basis) <= rich_interpolate_thres:
+            # if few contacts, 9 point samples, with following interpolation ratios related to four corners
+            # the contact interpolation matrix
+            return torch.tensor([[0.2, 0, 0.8, 0], 
+                                 [0, 0.2, 0, 0.8], 
+                                 [0, 0.8, 0, 0.2], 
+                                 [0.8, 0, 0.2, 0], 
+                                 [0.5, 0.5, 0, 0], 
+                                 [0, 0.5, 0.5, 0], 
+                                 [0.5, 0, 0, 0.5], 
+                                 [0, 0.5, 0, 0.5], 
+                                 [0, 0, 0.5, 0.5]]).float().to(self.device)
+        else: 
+            # too much contacts/links # 5 point samples
+            return torch.tensor([[0.2, 0, 0.8, 0], 
+                                 [0, 0.2, 0, 0.8], 
+                                 [0, 0.8, 0, 0.2], 
+                                 [0.8, 0, 0.2, 0], 
+                                 [0, 0.5, 0, 0.5]]).float().to(self.device)
 
     def get_meshes_from_q(self, q=None, i=0):
         data = []
@@ -441,6 +456,7 @@ if __name__ == '__main__':
 
     ## contact points visualization
     vis_data.append(ut_plotly.plot_point_cloud(pts=contact_points.cpu().squeeze(0), color='red'))
-    for i in range(10): vis_data.append(ut_plotly.plot_point_cloud(pts=(contact_points + 0.001 * i * contact_normals).cpu().squeeze(0), color='yellow'))
+    for i in range(10): 
+        vis_data.append(ut_plotly.plot_point_cloud(pts=(contact_points + 0.001 * i * contact_normals).cpu().squeeze(0), color='yellow'))
  
     fig = go.Figure(data=vis_data).show()

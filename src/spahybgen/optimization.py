@@ -11,8 +11,8 @@ import spahybgen.utils.utils_trans_torch as ut_trans_torch
 
 class SpactialOptimization:
     def __init__(self, robot_name, hand_scale=1., batch=32, init_rand_scale=0.2,
-                 tip_downsample = 0.8, wrench_downsample = 0.8, focal_ratio = 0.2, 
-                 learning_rate=5e-3, penetration_mode='surface_penetration', 
+                 tip_downsample = 0.7, wrench_downsample = 0.9, focal_ratio = 0.2, 
+                 learning_rate=1e-3, penetration_mode='surface_penetration', 
                  grid_type='voxel', device='cuda' if torch.cuda.is_available() else 'cpu',
                  input_orientation_type='quat', voxel_size=0.4/80, voxel_num=80, 
                  npts_hand_pnt=128, normalize_scale: bool = True):
@@ -153,7 +153,7 @@ class SpactialOptimization:
         ## Update the Wrench Focal Point: discrete eps=0.012, min_samples=4 
         ## Below dynamically search cluttering parameters to gain balanced focal wrenches; self.clutter_times=1 -> default
         centroid_attempt, centroid_num, best_id = 0, 0, 0
-        eps_instance, min_samples_instance = 0.012, 4
+        eps_instance, min_samples_instance = 0.012, 4 
         filter_out_thres = 10 # filtering wrench outlines
         while (centroid_attempt < self.clutter_times) and (centroid_num < self.clutter_times):
             object_cloud_labels = torch.from_numpy(DBSCAN(eps=eps_instance, min_samples=min_samples_instance).fit_predict(
@@ -212,7 +212,9 @@ class SpactialOptimization:
         index_surface = torch.argwhere(scene_surface_grads_full > 0)
 
         # print('Optimization: self.index_surface.shape[0]:{}'.format(index_surface.shape[0]))
-        if index_surface.shape[0] > 8000: index_surface = index_surface[np.random.choice(index_surface.shape[0], size=8000, replace=False), :]
+        scene_surface_limit = 8000
+        if index_surface.shape[0] > scene_surface_limit: 
+            index_surface = index_surface[np.random.choice(index_surface.shape[0], size=scene_surface_limit, replace=False), :]
         self.npts_scene_surface_points = index_surface.shape[0]
         # print('Optimization: self.npts_scene_surface_points:{}'.format(self.npts_scene_surface_points))
         scene_surface_points = index_surface * self.voxel_size
@@ -418,12 +420,13 @@ class SpactialOptimization:
         loss_FQH = torch.nn.functional.relu(mini_tip_cont_distances - distance_theshold.detach()).mean(dim=1) # [batch, cp] -> [batch]
 
         ## Loss of Tip Scores Grads
-        batch_contact_points_star = batch_contact_points + self.tip_score_grad[batch_CtPt_inds] * 0.01
+        tip_aggregate_ratio = 0.01
+        batch_contact_points_star = batch_contact_points + self.tip_score_grad[batch_CtPt_inds] * tip_aggregate_ratio
         loss_QH = (batch_contact_points - batch_contact_points_star.detach()).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
 
         ## Loss of Tip Rotations
         self.tip_rotvet_at_CTs_visulization = (batch_contact_points, tip_rotvet_at_CTs, batch_contact_normals)
-        loss_RH = (0.5 * (batch_contact_normals - tip_rotvet_at_CTs)).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
+        loss_RH = (batch_contact_normals - tip_rotvet_at_CTs).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
         # loss_RH = ((1 - torch.cosine_similarity(batch_contact_normals, tip_rotvet_at_CTs, dim=2))).mean(dim=1) # [batch, cp, 3] -> [batch] 
 
         ## Loss of contact centriod scores
@@ -509,9 +512,10 @@ class SpactialOptimization:
 
         if self.normalize_scale: 
             post_weights = [1.0] * len(losses_unscale) # piority of task goals, hand-agnostic
-            post_weights[0] = 5 # order as losses_unscale; RH
-            post_weights[1] = 5 # order as losses_unscale; WH
-            post_weights[2] = 10 # order as losses_unscale; PN
+            RH_goal_weight, WH_goal_weight, PN_goal_weight = 5, 5, 10
+            post_weights[0] = RH_goal_weight # order as losses_unscale; RH
+            post_weights[1] = WH_goal_weight # order as losses_unscale; WH
+            post_weights[2] = PN_goal_weight # order as losses_unscale; PN
             loss_opti = sum(self.loss_normalizer.update_and_scale(losses_unscale, post_weights))
 
         else: # constant scale for debug

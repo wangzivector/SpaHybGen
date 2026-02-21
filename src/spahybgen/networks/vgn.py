@@ -1,4 +1,4 @@
-# Inherent from [VGN](https://github.com/ethz-asl/vgn)
+### Reference from [VGN](https://github.com/ethz-asl/vgn)
 
 from builtins import super
 
@@ -10,16 +10,13 @@ import torch.nn.functional as F
 def conv(in_channels, out_channels, kernel_size):
     return nn.Conv3d(in_channels, out_channels, kernel_size, padding=kernel_size // 2)
 
-
 def conv_stride(in_channels, out_channels, kernel_size):
     return nn.Conv3d(
         in_channels, out_channels, kernel_size, stride=2, padding=kernel_size // 2
     )
 
-
 def count_num_trainable_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
-
 
 class Encoder(nn.Module):
     def __init__(self, in_channels, filters, kernels):
@@ -35,7 +32,6 @@ class Encoder(nn.Module):
         x = self.relu(self.conv3(x))
 
         return x
-
 
 class Decoder(nn.Module):
     def __init__(self, in_channels, filters, kernels, voxel_size):
@@ -56,7 +52,6 @@ class Decoder(nn.Module):
         x = self.relu(self.conv3(x))
         x = F.interpolate(x, self.voxel_size)
         return x
-
 
 class VGN(nn.Module):
     def __init__(self, voxel_discreteness=80, orientation='quat', augment=False):

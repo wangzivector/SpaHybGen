@@ -304,7 +304,7 @@ def create_summary_writers(net, device, log_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--net", default="vgn")
+    parser.add_argument("--net", default="unet")
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--logdir", type=Path, default="data/runs")
     parser.add_argument("--description", type=str, default="default")

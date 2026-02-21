@@ -21,7 +21,7 @@ class SensorServer:
         self.voxel_disc = voxel_disc
         self.grid_length = grid_length
         self.show_grid_with_issue = visualize_grid
-        self.current_cam2world = [0,0,0, 0,0,0]
+        self.current_cam2world = [0, 0, 0, 0, 0, 0]
         
         self.depth_buff = None
         rospy.Subscriber(depth_topic, Image, self.depth_callback)

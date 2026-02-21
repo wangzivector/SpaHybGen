@@ -239,19 +239,16 @@ def create_train_val_loaders(root, batch_size, val_split, data_type, kwargs):
 
 
 if __name__ == "__main__":
-    dataset_root = Path("/home/smarnlab/SpatialHybridGen/spahybgen/dataset")
-
+    ### Test code
     use_cuda = torch.cuda.is_available()
     kwargs = {"num_workers": 4, "pin_memory": True} if use_cuda else {}
-    data_type = 'Full' # Indexed Full
-    val_split = 0.999
+    data_type = 'Full' # Indexed or Full
+    val_split = 0.9
     batch_size = 4
-    dataset = dataset_root
-    train_loader, val_loader = create_train_val_loaders(
-        dataset, batch_size, val_split, data_type, kwargs
-    )
-    count_it = 0
+    dataset = Path("./dataset")
+    train_loader, val_loader = create_train_val_loaders(dataset, batch_size, val_split, data_type, kwargs)
 
+    count_it = 0
     if data_type == 'Indexed':
         for xs, ys, indexs in iter(train_loader):
             count_it += 1

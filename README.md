@@ -18,8 +18,9 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 
 ## Maintain schemes
 - Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
+- Replaced absolute path and magic number
 
-- [ ] Replace absolute path and magic number
+- [ ] Polish contact assignment script
 - [ ] Break down functions for clarity
 - [ ] Add module documentation and type hints
 - [ ] More in-script modular test
@@ -61,7 +62,8 @@ We release the generated contact dataset in [Google Drive](https://drive.google.
 
 If researchers expect to generate the contact dataset, please download the full [GraspNet-1Billion](https://graspnet.net/datasets.html) dataset and run the following command:
 ```bash
-python scripts/generate_dataset.py 
+cd spahybgen
+python scripts/generate_dataset.py --graspnet PATH_TO_GraspNet --output ./dataset/train
 ```
 It will take tens of hours for the generation process (currently we have not parallelized it). 
 
@@ -74,8 +76,7 @@ The contact dataset should be placed inside a `dataset` folder as: `spahybgen\da
   <img src="assets/images/contact_inference.jpg" width="85%" title="contact_inference">
 </div>
 
-To train a 3D U-Net using the generated contact dataset, please run command:
-
+After generating or downloading the Contact Dataset in the previous step, run command to train a 3D U-Net:
 ```bash
 python scripts/train_shgn.py --dataset dataset/train/ --net unet --orientation quat --gridtype voxel --batch-size 4 --numsample 3000 --epochs 64 --loaders 10 --gridtype voxel
 ```
@@ -93,7 +94,7 @@ Alternatively, practitioners capture scene volumes using a depth sensor, followi
 > Two observation samples can be found in [assets/observations/](assets/observations/). You can load them with `np.load('assets/observations/scene_010_ann_0124_voxel.npz')["grid"]`.
 
 ### 2. Contact Inference
-With the `trained model` and obtained `observation`, dense contact features can be reasoned before grasp optimization.
+With the trained model and obtained observation, dense contact features can be reasoned before grasp optimization.
 
 Note: If you want to individually test the `contact inference` module, please run:
 ```bash
@@ -103,7 +104,7 @@ python scripts/contact_inference_test.py
 It will infer contact features using the observation `scene_010_ann_0124_voxel.npz` and model `spahybgen_unet_64_voxel.pt` in folder [assets/](assets/).
 
 ### 3. Hand Model
-More than ten robotic hands are released in folder [\handmodel](\handmodel).
+**More than ten robotic hands** are released in folder [\handmodel](\handmodel).
 To construct a custom gripper in compatible format, please check these hand examples. Generally, one hand model can be generated within the following steps:
 
 (1). Prepare the standard URDF file for the targeted robotic hand. The `CAD filepath` and `xml encoding information` in .urdf should be properly modified to match the code (for the targeted format, please refer to the released hand examples).
@@ -114,19 +115,25 @@ To construct a custom gripper in compatible format, please check these hand exam
 
 
 ### 4. Grasp Optimization
-With the inferred `contact features` and established [hand model](handmodel/), grasp optimization is parallelized using [Pytorch_kinematics](https://github.com/UM-ARM-Lab/pytorch_kinematics).
+With the inferred contact features and established hand model, grasp optimization is parallelized using [Pytorch_kinematics](https://github.com/UM-ARM-Lab/pytorch_kinematics).
 
-Note: If you want to individually test the `grasp optimization` module, download the `std_inference_result_from_clutter.npy` from [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) to the folder `assets\`. Then run:
-```bash
-python scripts/grasp_optimization_test.py
+After running the contact inference script `contact_inference_test.py` in Step 2, the following cmd will optimize grasps using the specific hand and visualize the results using Web-based Plotly:
+```bash 
+python scripts/grasp_optimization_test.py --hand robotiq2f --max_iter 120 --batch_size 64
+# AVAILABLE HAND MODELS: 
+# 2F: [robotiq2f, finray2f, antipodal_hand] 
+# 3F: [robotiq3f, softpneu3f] 
+# 4F: [finray4f, leaphand] 
+# 5F: [brunel_hand]
 ``` 
-It will optimize grasps using Robotiq-2F and visualize the results using Web-based Plotly.
+
+Note: If you want to individually test the grasp optimization module, download the `std_inference_result_from_clutter.npy` from [Google Drive](https://drive.google.com/drive/folders/1hs88Nh3Kx85hMYPT0tjwxXlCzFibeEXJ?usp=sharing) to the folder `./assets`, and rename it to `inference_results.npy`.
 
 
 ### **Full Pipeline**
 To run the full algorithmic pipeline without hardware (using the default observation file and trained model contained in folder [assets/](assets/)), please directly run:
 ```bash
-python scripts/generation_pipeline_test.py
+python scripts/generation_pipeline_test.py --hand robotiq2f --max_iter 120 --batch_size 64
 ```
 This script is a combination of [2. Contact Inference](#2-contact-inference) and [4. Grasp Optimization](#4-grasp-optimization). Similarly, it will optimize grasps using Robotiq-2F and visualize the results using Web-based Plotly.
 

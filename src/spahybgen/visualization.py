@@ -13,14 +13,14 @@ def visualize_grid(grid, frame_id = 'grid_ws', grid_length=0.4, voxel_disc=80, t
 
 def visualize_inference(prediction, voxel_size, threshold):
     qual_vol_pro, rot_vol_pro, wren_vol_pro = prediction[1], prediction[2:-1], prediction[-1]
-    grasp_poses, grasp_scores, wren_posis, wren_scores = \
+    contact_poses, contact_scores, wren_posis, wren_scores = \
         Inference.select(qual_vol_pro, rot_vol_pro, wren_vol_pro, threshold, threshold)
-    num_grasp_poses = len(grasp_poses)
-    if num_grasp_poses > 0:
-        idx = np.random.choice(num_grasp_poses, size=min(3000, num_grasp_poses), replace=False)
-        grasp_poses, grasp_scores = [grasp_poses[idx_i] for idx_i in idx], np.array(grasp_scores)[idx]
-    rospy.loginfo("ut_vis.draw_vectors num_poses:{} with threshold : {}".format(num_grasp_poses, threshold))
-    tips_vectors = ut_vis.visualize_vectors_in_array(grasp_poses, grasp_scores, voxel_size)
+    num_contact_poses = len(contact_poses)
+    if num_contact_poses > 0:
+        idx = np.random.choice(num_contact_poses, size=min(3000, num_contact_poses), replace=False)
+        contact_poses, contact_scores = [contact_poses[idx_i] for idx_i in idx], np.array(contact_scores)[idx]
+    rospy.loginfo("ut_vis.draw_vectors num_poses:{} with threshold : {}".format(num_contact_poses, threshold))
+    tips_vectors = ut_vis.visualize_vectors_in_array(contact_poses, contact_scores, voxel_size)
     ut_vis.clear_vectors()
     ut_vis.draw_vectors(tips_vectors, "grid_ws")
 

@@ -37,11 +37,6 @@ def pipeline(cfg_file):
         GP.optimization.save_optimization,
         GP.optimization.focal_ratio,
     )
-    weights_opti = {
-    'robotiq2f': {'weight_RH':0.1, 'weight_WH':10, 'weight_FC':0.01, 'weight_AB':0.1, 'weight_PN':10.0, 'weight_CK': 0.1, 'init_rand_scale': 0.3},
-    'leaphand': {'clutter_times': 1, 'init_rand_scale': 0.2}
-    }
-    grasp_node.grasp_optimization.set_optimization_weights(weights_opti[GP.robot_a.hand_name])
     rospy.loginfo("[Pipeline]: grasp_node initialized.")
 
     gripper_node = GripperNode(GP.robot_a.hand_name)

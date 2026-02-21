@@ -115,7 +115,7 @@ def Grasp2Tips(df_raw_grasps):
     return tips_data
 
 
-def Tips2TipsDF(tips_data, volume_size, grid_size, interp_ratios = [0.2, 1.0], scene_grid=None, grid_type=None):
+def Tips2TipsDF(tips_data, volume_size, grid_size, interp_ratios=[0.2, 1.0], scene_grid=None, grid_type=None):
     voxel_size = volume_size / grid_size
     left_start, left_end = tips_data[['lsx', 'lsy', 'lsz']].to_numpy(), tips_data[['lex', 'ley', 'lez']].to_numpy()
     right_start, right_end = tips_data[['rsx', 'rsy', 'rsz']].to_numpy(), tips_data[['rex', 'rey', 'rez']].to_numpy()
@@ -172,10 +172,11 @@ def Tips2TipsDF(tips_data, volume_size, grid_size, interp_ratios = [0.2, 1.0], s
     if scene_grid is not None: 
         indexs_grasp = index_str2nums(generate_labels.index, is_array=True).astype(np.int16)
         position_occupy = scene_grid[0, indexs_grasp[:,0], indexs_grasp[:,1], indexs_grasp[:,2]]
+        surface_value = 0.5
         if grid_type == 'tsdf':
-            weight_score = np.where(np.logical_and(position_occupy <= 0.5, position_occupy > 1e-3), 0, weight_score)
+            weight_score = np.where(np.logical_and(position_occupy <= surface_value, position_occupy > 1e-3), 0, weight_score)
         elif grid_type == 'voxel':
-            weight_score = np.where(position_occupy > 0.5, 0, weight_score)
+            weight_score = np.where(position_occupy > surface_value, 0, weight_score)
         generate_labels['weighted_score'] = weight_score
 
     # transfer direction from approaching to tips
@@ -194,7 +195,7 @@ def Tips2TipsDF(tips_data, volume_size, grid_size, interp_ratios = [0.2, 1.0], s
     return generate_labels
 
 
-def Tips2WrensDF(tips_data, volume_size, grid_size, interp_ratios = [0.2, 1.0]):
+def Tips2WrensDF(tips_data, volume_size, grid_size, interp_ratios=[0.2, 1.0]):
     voxel_size = volume_size / grid_size
     left_start, left_end = tips_data[['lsx', 'lsy', 'lsz']].to_numpy(), tips_data[['lex', 'ley', 'lez']].to_numpy()
     right_start, right_end = tips_data[['rsx', 'rsy', 'rsz']].to_numpy(), tips_data[['rex', 'rey', 'rez']].to_numpy()

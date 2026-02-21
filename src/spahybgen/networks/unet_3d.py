@@ -1,9 +1,6 @@
 # Inherent from [3D-UNet](https://github.com/AghdamAmir/3D-UNet)
 # Paper URL: https://arxiv.org/abs/1606.06650
 
-# model = UNet3D(in_channels=3, num_classes=1)
-# summary(model=model, input_size=(3, 16, 128, 128), batch_size=-1, device="cpu")
-
 from torch import nn
 import torch
 import torch.nn.functional as F
@@ -145,7 +142,7 @@ class UNet3D(nn.Module):
         return out_score, out_rot, out_wren
 
 
-# if __name__ == '__main__':
-#     model = UNet3D(in_channels=1)
-#     from torchsummary import summary
-#     summary(model=model, input_size=(1, 80, 80, 80), device='cpu')
+if __name__ == '__main__':
+    model = UNet3D(in_channels=1)
+    from torchsummary import summary
+    summary(model=model, input_size=(1, 80, 80, 80), device='cpu')

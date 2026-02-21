@@ -1,5 +1,4 @@
 ## Gripper operation node
-import math
 import rospy
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import Int16MultiArray
@@ -87,22 +86,12 @@ class GripperNode:
             "leaphand": 0.00,
         }
 
-        Gripper2Grip = {
-            "robotiq2f": 0.0, # because the optimal pose is the gripper pose already, not the object pose
-            "robotiq3f": 0.0,
-            "finray2f": 0.0,
-            "finray4f": 0.0,
-            "softpneu3f": 0.0,
-            "brunelhand": 0.0,
-            "leaphand": 0.0,
-        }
-
         self.gripper_pulisher = rospy.Publisher(PublisherMsgName[gripper], PublisherMsgType[gripper], queue_size=1)
         
         self.gripper_tfname = GripperTFName[gripper]
         self.gripper_tfname_vis = GripperTFName_vis[gripper]
         self.armend2gripper = Armend2Gripper[gripper]
-        self.gripper2grip = Gripper2Grip[gripper]
+        self.gripper2grip = 0.0
         
         self.grasp_execution = ExecutionFun[gripper]
 
