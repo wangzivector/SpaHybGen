@@ -8,13 +8,14 @@ from spahybgen.handmodel import HandModel
 import spahybgen.utils.utils_trans_torch as ut_trans_torch
 
 
+
 class SpactialOptimization:
     def __init__(self, robot_name, hand_scale=1., batch=32, init_rand_scale=0.2,
                  tip_downsample = 0.8, wrench_downsample = 0.8, focal_ratio = 0.2, 
                  learning_rate=5e-3, penetration_mode='surface_penetration', 
                  grid_type='voxel', device='cuda' if torch.cuda.is_available() else 'cpu',
                  input_orientation_type='quat', voxel_size=0.4/80, voxel_num=80, 
-                 npts_hand_pnt=128):
+                 npts_hand_pnt=128, normalize_scale: bool = True):
         self.grid_type = grid_type
         self.device = device
         self.robot_name = robot_name
@@ -26,6 +27,7 @@ class SpactialOptimization:
         self.voxel_num = voxel_num
         self.penetration_mode = penetration_mode
         self.input_orientation_type = input_orientation_type
+        self.normalize_scale = normalize_scale
 
         self.npts_hand_surface_points = npts_hand_pnt
         self.npts_contact_points = None
@@ -56,13 +58,15 @@ class SpactialOptimization:
         self.handmodel = None
         self.target_approach_vector_batch = None
 
-        # optimization weights
-        self.weight_RH = 1.0
-        self.weight_WH = 10.0
-        self.weight_FC = 0.01
-        self.weight_CK = 10.0
-        self.weight_AB = 0.1
-        self.weight_PN = 100.0
+        if not self.normalize_scale: # constant scales for debug only
+            self.scale_RH = 1.0
+            self.scale_WH = 10.0
+            self.scale_FC = 0.01
+            self.scale_QH = 1.0
+            self.scale_CK = 10.0
+            self.scale_AB = 0.1
+            self.scale_PN = 100.0
+
         self.clutter_times = 1
 
         ## Initial Hand Model
@@ -76,6 +80,7 @@ class SpactialOptimization:
 
 
     def reset_scene(self, scene_infer_map, cam_appr_matrix):
+        self.loss_normalizer = MeanScaleNormalizer()
         self.global_step = 0
         self.scene_information_process(scene_infer_map)
 
@@ -212,20 +217,16 @@ class SpactialOptimization:
         # print('Optimization: self.npts_scene_surface_points:{}'.format(self.npts_scene_surface_points))
         scene_surface_points = index_surface * self.voxel_size
         scene_surface_points = scene_surface_points.reshape(1, 1, self.npts_scene_surface_points, 3) # [sp ,3] -> [1, 1, sp ,3]
-        if self.penetration_mode == "surface_penetration":
-            self.batch_scene_surface_points = scene_surface_points.repeat(self.batch, self.npts_hand_surface_points ,1, 1) # [batch, hp, sp ,3]
-        elif self.penetration_mode == "contact_penetration":
-            self.batch_scene_surface_points = scene_surface_points.repeat(self.batch, self.npts_contact_points ,1, 1) # [batch, cp, sp ,3]
+        self.batch_scene_surface_points_surface = scene_surface_points.repeat(self.batch, self.npts_hand_surface_points ,1, 1) # [batch, hp, sp ,3]
+        self.batch_scene_surface_points_candidate = scene_surface_points.repeat(self.batch, self.npts_contact_points ,1, 1) # [batch, cp, sp ,3]
 
         ss_grad_x = grad_x[index_surface[:, 0], index_surface[:, 1], index_surface[:, 2]]
         ss_grad_y = grad_y[index_surface[:, 0], index_surface[:, 1], index_surface[:, 2]]
         ss_grad_z = grad_z[index_surface[:, 0], index_surface[:, 1], index_surface[:, 2]]
         scene_surface_grads = torch.stack([ss_grad_x, ss_grad_y, ss_grad_z], dim=1)
         scene_surface_grads = scene_surface_grads.reshape(1, 1, self.npts_scene_surface_points, 3) # [sp ,3] -> [1, 1, sp ,3]
-        if self.penetration_mode == "surface_penetration":
-            self.batch_scene_surface_grads = scene_surface_grads.repeat(self.batch, self.npts_hand_surface_points ,1, 1) # [batch, hp, sp ,3]
-        elif self.penetration_mode == "contact_penetration":
-            self.batch_scene_surface_grads = scene_surface_grads.repeat(self.batch, self.npts_contact_points ,1, 1) # [batch, cp, sp ,3]
+        self.batch_scene_surface_grads_surface = scene_surface_grads.repeat(self.batch, self.npts_hand_surface_points ,1, 1) # [batch, hp, sp ,3]
+        self.batch_scene_surface_grads_candidate = scene_surface_grads.repeat(self.batch, self.npts_contact_points ,1, 1) # [batch, cp, sp ,3]
 
 
     def get_batch_handmodel_surface_points(self, repeat_num):
@@ -368,11 +369,13 @@ class SpactialOptimization:
         ## Penetration with Hand-to-Object Vectors and Object Normals
         if self.penetration_mode == "surface_penetration":
             batch_hand_points = self.get_batch_handmodel_surface_points(self.npts_scene_surface_points) # [batch, hp, sp ,3]
+            batch_scene_surface_points = self.batch_scene_surface_points_surface
+            batch_scene_surface_grads = self.batch_scene_surface_grads_surface
         elif self.penetration_mode == "contact_penetration":
             batch_hand_points, _ = self.get_batch_handmodel_contact_points_and_normals(repeat_num=self.npts_scene_surface_points) # [batch, cp , sp, 3]
+            batch_scene_surface_points = self.batch_scene_surface_points_candidate
+            batch_scene_surface_grads = self.batch_scene_surface_grads_candidate
 
-        batch_scene_surface_points = self.batch_scene_surface_points # [batch, hp, sp ,3]
-        batch_scene_surface_grads = self.batch_scene_surface_grads # [batch, hp, sp ,3]
         scene_to_hand_vect = batch_hand_points - batch_scene_surface_points # [batch, hp, sp, 3]
         scene_to_hand_dist = scene_to_hand_vect.norm(dim=3) # [batch, hp, sp]
         close_sh_pairs_inds = scene_to_hand_dist.min(dim=2)[1] # [batch, hp, sp] -> # [batch, hp]
@@ -383,7 +386,6 @@ class SpactialOptimization:
         close_sh_pairs_dots = (torch.nn.functional.normalize(close_sh_pairs_vect) * torch.nn.functional.normalize(close_sh_pairs_nmls)).sum(dim=2) # [batch, hp]
         loss_penetration = torch.nn.functional.relu(close_sh_pairs_dots).mean(dim=1) # [batch, hp] -> # [batch]
         return loss_penetration
-
 
     def compute_spacial_loss(self, penetration_check):
         ## Data Preparasion
@@ -402,29 +404,27 @@ class SpactialOptimization:
         tip_weights_at_CTs = (tip_scoreweights_at_CTs * tip_orientweights_at_CTs).detach().unsqueeze(-1) # [batch, cp, 1]
 
         ## Loss of Tip focus
-        if self.weight_RH is None: loss_FQH, loss_QH, loss_RH = torch.zeros(self.batch, device=self.device), torch.zeros(self.batch, device=self.device), torch.zeros(self.batch, device=self.device)
-        else:
-            size_tips, select_ratio = self.batch_tip_focal_points.shape[2], 2
-            selected_batch_tip_focal_points = self.batch_tip_focal_points[:, :, np.random.choice(size_tips, size=size_tips//select_ratio, replace=False), :]
-            # [batch, cp, 3] -> [batch, cp, 1, 3] -> [batch, cp, sp/e, 3]
-            batch_contact_points_fortips = batch_contact_points.unsqueeze(2).repeat(1, 1, size_tips//select_ratio, 1)
-            batch_tip_cont_distances = (batch_contact_points_fortips - selected_batch_tip_focal_points).norm(dim=3) # [batch, cp, sp/e, 3] -> [batch, cp, sp/e]
-            mini_tip_cont_distances = batch_tip_cont_distances.min(dim=2)[0] # [batch, cp, sp/e] -> [batch, cp]
-            # Calculate a coarse mean distance of contact points
-            indx_batch = torch.arange(self.batch).unsqueeze(dim=1).repeat(1, self.npts_contact_points)
-            indx_b = torch.stack([torch.randperm(self.npts_contact_points) for _ in range(self.batch)])
-            distance_theshold = (batch_contact_points[indx_batch, indx_b, :] - batch_contact_points).norm(dim=2).mean() / 10 # ~ 0.005 m for brunel
-            # contact-tips close to stop
-            loss_FQH = torch.nn.functional.relu(mini_tip_cont_distances - distance_theshold.detach()).mean(dim=1) # [batch, cp] -> [batch]
+        size_tips, select_ratio = self.batch_tip_focal_points.shape[2], 2
+        selected_batch_tip_focal_points = self.batch_tip_focal_points[:, :, np.random.choice(size_tips, size=size_tips//select_ratio, replace=False), :]
+        # [batch, cp, 3] -> [batch, cp, 1, 3] -> [batch, cp, sp/e, 3]
+        batch_contact_points_fortips = batch_contact_points.unsqueeze(2).repeat(1, 1, size_tips//select_ratio, 1)
+        batch_tip_cont_distances = (batch_contact_points_fortips - selected_batch_tip_focal_points).norm(dim=3) # [batch, cp, sp/e, 3] -> [batch, cp, sp/e]
+        mini_tip_cont_distances = batch_tip_cont_distances.min(dim=2)[0] # [batch, cp, sp/e] -> [batch, cp]
+        # Calculate a coarse mean distance of contact points
+        indx_batch = torch.arange(self.batch).unsqueeze(dim=1).repeat(1, self.npts_contact_points)
+        indx_b = torch.stack([torch.randperm(self.npts_contact_points) for _ in range(self.batch)])
+        distance_theshold = (batch_contact_points[indx_batch, indx_b, :] - batch_contact_points).norm(dim=2).mean() / 10 # ~ 0.005 m for brunel
+        # contact-tips close to stop
+        loss_FQH = torch.nn.functional.relu(mini_tip_cont_distances - distance_theshold.detach()).mean(dim=1) # [batch, cp] -> [batch]
 
-            ## Loss of Tip Scores Grads
-            batch_contact_points_star = batch_contact_points + self.tip_score_grad[batch_CtPt_inds] * 0.01
-            loss_QH = (batch_contact_points - batch_contact_points_star.detach()).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
+        ## Loss of Tip Scores Grads
+        batch_contact_points_star = batch_contact_points + self.tip_score_grad[batch_CtPt_inds] * 0.01
+        loss_QH = (batch_contact_points - batch_contact_points_star.detach()).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
 
-            ## Loss of Tip Rotations
-            self.tip_rotvet_at_CTs_visulization = (batch_contact_points, tip_rotvet_at_CTs, batch_contact_normals)
-            loss_RH = self.weight_RH * ((0.5 * (batch_contact_normals - tip_rotvet_at_CTs)).norm(dim=2)).mean(dim=1) # [batch, cp, 3] -> [batch]
-            # loss_RH = ((1 - torch.cosine_similarity(batch_contact_normals, tip_rotvet_at_CTs, dim=2))).mean(dim=1) # [batch, cp, 3] -> [batch] 
+        ## Loss of Tip Rotations
+        self.tip_rotvet_at_CTs_visulization = (batch_contact_points, tip_rotvet_at_CTs, batch_contact_normals)
+        loss_RH = (0.5 * (batch_contact_normals - tip_rotvet_at_CTs)).norm(dim=2).mean(dim=1) # [batch, cp, 3] -> [batch]
+        # loss_RH = ((1 - torch.cosine_similarity(batch_contact_normals, tip_rotvet_at_CTs, dim=2))).mean(dim=1) # [batch, cp, 3] -> [batch] 
 
         ## Loss of contact centriod scores
         current_ConCent_points = (batch_contact_points).mean(dim=1) # [batch, cp, 3] * [batch, cp, 1] -> [batch, 3]
@@ -438,83 +438,98 @@ class SpactialOptimization:
         # loss_WH = (current_ConCent_points - ConCent_points_star.detach()).norm(dim=1) # [batch]
 
         # Alternative: closest wrench scores to the current_wrench_points
-        if self.weight_WH is None: loss_WH = torch.zeros(self.batch, device=self.device)
-        else:
-            batch_ConCent_points = current_ConCent_points.unsqueeze(1).repeat((1, self.wrench_focal_points.shape[0], 1)) # [batch, 3] -> [batch, wp, 3]
-            loss_WH = self.weight_WH * (batch_ConCent_points - self.batch_wrench_focal_points.clone()).norm(dim=2).min(dim=1)[0] # [batch]
+        batch_ConCent_points = current_ConCent_points.unsqueeze(1).repeat((1, self.wrench_focal_points.shape[0], 1)) # [batch, 3] -> [batch, wp, 3]
+        loss_WH = (batch_ConCent_points - self.batch_wrench_focal_points.clone()).norm(dim=2).min(dim=1)[0] # [batch]
 
         ## Loss of Force Closure
-        if self.weight_FC is None: loss_linear_independence, loss_force_closure = torch.zeros(self.batch, device=self.device),  torch.zeros(self.batch, device=self.device)
-        else:
-            # determine the coordinate origins: closest wrench scores to the current_wrench_points
-            batch_ConCent_points = current_ConCent_points.unsqueeze(1).repeat((1, self.wrench_focal_points.shape[0], 1)) # [batch, 3] -> [batch, wp, 3]
-            close_cw_pairs_inds = (batch_ConCent_points - self.batch_wrench_focal_points.clone()).norm(dim=2).min(dim=1)[1] # [batch]
-            batch_WrenCent_points = self.wrench_focal_points[close_cw_pairs_inds, :] # [wp, 3] -> [batch, 3]
-            self.batch_WrenCent_points_visualization = batch_WrenCent_points
-            # weight the contacts:random sample with probabilities (or a. threshold to filterout contacts; or b. weight the contact again)
-            wrenched_contact_points = batch_contact_points - batch_WrenCent_points.unsqueeze(1).repeat((1, self.npts_contact_points, 1)) # [batch, cp, 3]
-            #TODO: the normalize operation may be unnecessary.
-            scaled_contact_normals = batch_contact_normals * torch.nn.functional.normalize(tip_weights_at_CTs, p=1.0, dim=1) # [batch, cp, 3] * [batch, cp, 1]
-            loss_linear_independence, loss_force_closure = self.force_closure_loss(wrenched_contact_points, scaled_contact_normals)
-            loss_force_closure = self.weight_FC * loss_force_closure 
+        # determine the coordinate origins: closest wrench scores to the current_wrench_points
+        batch_ConCent_points = current_ConCent_points.unsqueeze(1).repeat((1, self.wrench_focal_points.shape[0], 1)) # [batch, 3] -> [batch, wp, 3]
+        close_cw_pairs_inds = (batch_ConCent_points - self.batch_wrench_focal_points.clone()).norm(dim=2).min(dim=1)[1] # [batch]
+        batch_WrenCent_points = self.wrench_focal_points[close_cw_pairs_inds, :] # [wp, 3] -> [batch, 3]
+        self.batch_WrenCent_points_visualization = batch_WrenCent_points
+        # weight the contacts:random sample with probabilities (or a. threshold to filterout contacts; or b. weight the contact again)
+        wrenched_contact_points = batch_contact_points - batch_WrenCent_points.unsqueeze(1).repeat((1, self.npts_contact_points, 1)) # [batch, cp, 3]
+        #TODO: the normalize operation may be unnecessary.
+        scaled_contact_normals = batch_contact_normals * torch.nn.functional.normalize(tip_weights_at_CTs, p=1.0, dim=1) # [batch, cp, 3] * [batch, cp, 1]
+        loss_linear_independence, loss_force_closure = self.force_closure_loss(wrenched_contact_points, scaled_contact_normals)
+        # loss_force_closure = self.scale_FC * loss_force_closure 
 
         ## Loss of Approaching Bias
-        if self.weight_AB is None: loss_approach_bias = torch.zeros(self.batch, device=self.device) 
-        else:
-            curr_hand_approach_vect = torch.matmul(self.handmodel.current_approaching_matrices, torch.tensor([0., 0., 1.], device=self.device))
-            loss_approach_bias = self.weight_AB * torch.abs(self.target_approach_vector_batch - curr_hand_approach_vect).mean(dim=1)
+        curr_hand_approach_vect = torch.matmul(self.handmodel.current_approaching_matrices, torch.tensor([0., 0., 1.], device=self.device))
+        loss_approach_bias = torch.abs(self.target_approach_vector_batch - curr_hand_approach_vect).mean(dim=1)
 
         ## Loss of Joint Limits
         loss_joint_range = (torch.nn.functional.relu(self.q_current[:, self.handmodel.orie_bit:] - self.q_joint_upper) + \
             torch.nn.functional.relu(self.q_joint_lower - self.q_current[:, self.handmodel.orie_bit:])).sum(dim=1) # [batch]
 
         ## Loss of Custom Gripper's Kinematic Constraints
-        if self.weight_CK is None: loss_custom_kine = torch.zeros(self.batch, device=self.device) 
-        else:
-            loss_custom_kine = self.weight_CK * self.loss_custom_kinematics() # [batch]
-
-        grad_loss = loss_joint_range + loss_custom_kine + loss_FQH + loss_QH + loss_RH + loss_WH + loss_force_closure + loss_linear_independence + loss_approach_bias
+        loss_custom_kine = self.loss_custom_kinematics() # [batch]
 
         ## Loss of Scene-Hand Penetration
-        if penetration_check:
-            if self.weight_PN is None: loss_pene = torch.zeros(self.batch, device=self.device)
-            else:
-                loss_pene = self.weight_PN * self.penetration_loss() 
-        else:
-            loss_pene = torch.zeros(self.batch, device=self.device)
-        
-        grad_loss = grad_loss + loss_pene
+        if penetration_check: loss_pene = self.penetration_loss() 
+        else: loss_pene = torch.zeros(self.batch, device=self.device)
 
-        self.losses = {
-            'loss_all': grad_loss,
-            'loss_FQH': loss_FQH,
-            'loss_QH': loss_QH,
-            'loss_RH': loss_RH,
-            'loss_WH': loss_WH,
-            'loss_penet': loss_pene,
-            'loss_joint_range': loss_joint_range,
-            'loss_custom_kine': loss_custom_kine,
-            'loss_linear_independence': loss_linear_independence,
-            'loss_force_closure': loss_force_closure,
-            'loss_approach_bias': loss_approach_bias,
+        losses = {
+            'FQH': loss_FQH,
+            'QH': loss_QH,
+            'RH': loss_RH,
+            'WH': loss_WH,
+            'PN': loss_pene,
+            'JR': loss_joint_range,
+            'CK': loss_custom_kine,
+            'LD': loss_linear_independence,
+            'FC': loss_force_closure,
+            'AB': loss_approach_bias,
             'CTS': tip_scoreweights_at_CTs.mean(dim=1),
         }
-        return grad_loss
-
+        return losses
 
     def step(self, penetration_check):
+        ## simplified MALA step
         if torch.rand(1) > torch.tensor(1 + self.global_step/20).sigmoid():
             with torch.no_grad():
                 q_noise = torch.normal(mean=0., std=self.learning_rate, size=self.q_current.shape).to(self.device)
                 self.q_current.add_(q_noise)
                 self.handmodel.update_kinematics(q=self.q_current) # set current joint states
-                loss = self.compute_spacial_loss(penetration_check) # compute loss of current states
-        else:
-            self.optimizer.zero_grad() # zero gradient
-            self.handmodel.update_kinematics(q=self.q_current) # set current joint states
-            loss = self.compute_spacial_loss(penetration_check) # compute loss of current states
-            loss.mean().backward() # get gradient from engergy to joint states
-            self.optimizer.step() # optimize the joint state with obtained gradients
+
+        self.optimizer.zero_grad() # zero gradient
+        self.handmodel.update_kinematics(q=self.q_current) # set current joint states
+        self.losses = self.compute_spacial_loss(penetration_check) # compute loss of current states
+
+        losses_unscale = [
+            self.losses['RH'], 
+            self.losses['WH'], 
+            self.losses['PN'], 
+            self.losses['FQH'] + self.losses['QH'], 
+            self.losses['JR'] + self.losses['CK'], 
+            self.losses['FC'] + self.losses['LD'], 
+            self.losses['AB']
+        ]
+        self.losses['loss_all'] = sum(losses_unscale)
+
+        if self.normalize_scale: 
+            post_weights = [1.0] * len(losses_unscale) # piority of task goals, hand-agnostic
+            post_weights[0] = 5 # order as losses_unscale; RH
+            post_weights[1] = 5 # order as losses_unscale; WH
+            post_weights[2] = 10 # order as losses_unscale; PN
+            loss_opti = sum(self.loss_normalizer.update_and_scale(losses_unscale, post_weights))
+
+        else: # constant scale for debug
+            scales = [
+                self.scale_RH,
+                self.scale_WH,
+                self.scale_PN,
+                self.scale_QH,
+                self.scale_CK,
+                self.scale_FC,
+                self.scale_AB
+            ]
+            loss_opti = sum(x * y for x, y in zip(losses_unscale, scales))
+
+        loss_opti.mean().backward() # get gradient from engergy to joint states
+        self.optimizer.step() # optimize the joint state with obtained gradients
+
+        self.losses['loss_opti'] = loss_opti
         self.global_step += 1
 
 
@@ -528,3 +543,24 @@ class SpactialOptimization:
 
     def get_current_plotly_data(self, index=0, color='rgb(100, 0, 100)', opacity=1.0, text=None):
         return self.handmodel.get_plotly_data(q=self.q_current, i=index, color=color, opacity=opacity, text=text)
+
+
+class MeanScaleNormalizer:
+    def __init__(self, momentum: float = 0.5, eps: float = 1e-8):
+        self.m = momentum
+        self.eps = eps
+        self.mean = None
+
+    def update_and_scale(self, losses: list, post_weights: list):
+        scaled = []
+        if self.mean is None:
+            self.mean = [0.]*len(losses)
+            for i, loss_i in enumerate(losses): 
+                self.mean[i] = loss_i.detach().mean()
+                scaled.append(losses[i] / (self.mean[i] + self.eps) * post_weights[i])
+        else:
+            for i, loss_i in enumerate(losses):
+                self.mean[i] = self.m * self.mean[i] + (1 - self.m) * loss_i.detach().mean()
+                scaled.append(losses[i] / (self.mean[i] + self.eps) * post_weights[i])
+
+        return scaled

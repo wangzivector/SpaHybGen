@@ -28,7 +28,13 @@ class GraspOptimization(SpactialOptimization):
         losses_dict = None
         for i_iter in tqdm(range(max_iter), desc=running_name, bar_format="{l_bar} {bar} [{elapsed_s:.3f}s, {rate_fmt}{postfix}]", disable=tqdm_disable):
             penetration_check = i_iter > (max_iter * pent_check_split)
+            if i_iter == (max_iter - 1): # final step to enable surface penetration check
+                pn_mode = self.penetration_mode
+                self.penetration_mode = 'surface_penetration'
+
             self.step(penetration_check)
+
+            if i_iter == (max_iter - 1):self.penetration_mode = pn_mode
 
             with torch.no_grad():
                 opt_q = self.get_opt_q()
@@ -54,7 +60,7 @@ class GraspOptimization(SpactialOptimization):
                         tb_writer.add_scalar(tag=f'loss/{running_name}/{i_loss}', scalar_value=loss[i_loss], global_step=i_iter)
 
         q_trajectory = torch.stack(q_trajectory, dim=0).transpose(0, 1).detach().cpu().clone().numpy()
-        losses_dict['sort_ids'] = torch.sort(self.losses['loss_all'])[1].cpu().numpy()
+        losses_dict['sort_ids'] = torch.sort(self.losses['loss_opti'])[1].cpu().numpy()
         return q_trajectory, losses_dict
 
 
@@ -92,18 +98,19 @@ class GraspOptimization(SpactialOptimization):
         for i, id_sort in enumerate(indx_good): 
             vis_data += self.get_current_plotly_data(
                 index=id_sort, opacity=1.0, color=f'rgb({int(250*(1 - i/vis_size))}, {0}, 200)', 
-                text="RANK-{} #All:{:.3} #FQH:{:.3} #QH:{:.3} #RH:{:.3} #WH:{:.3} #Pen:{:.3} #JR:{:.3} #CK:{:.3} #FC:{:.3} #ApB:{:.3} #CTS:{:.3}".format( 
+                text="RANK-{} #All:{:.3} #Opt:{:.3} #FQH:{:.3} #QH:{:.3} #RH:{:.3} #WH:{:.3} #Pen:{:.3} #JR:{:.3} #CK:{:.3} #FC:{:.3} #ApB:{:.3} #CTS:{:.3}".format( 
                     i,
                     losses_dict['loss_all'][id_sort][-1],
-                    losses_dict['loss_FQH'][id_sort][-1],
-                    losses_dict['loss_QH'][id_sort][-1],
-                    losses_dict['loss_RH'][id_sort][-1],
-                    losses_dict['loss_WH'][id_sort][-1],
-                    losses_dict['loss_penet'][id_sort][-1],
-                    losses_dict['loss_joint_range'][id_sort][-1],
-                    losses_dict['loss_custom_kine'][id_sort][-1],
-                    losses_dict['loss_force_closure'][id_sort][-1],
-                    losses_dict['loss_approach_bias'][id_sort][-1],
+                    losses_dict['loss_opti'][id_sort][-1],
+                    losses_dict['FQH'][id_sort][-1],
+                    losses_dict['QH'][id_sort][-1],
+                    losses_dict['RH'][id_sort][-1],
+                    losses_dict['WH'][id_sort][-1],
+                    losses_dict['PN'][id_sort][-1],
+                    losses_dict['JR'][id_sort][-1],
+                    losses_dict['CK'][id_sort][-1],
+                    losses_dict['FC'][id_sort][-1],
+                    losses_dict['AB'][id_sort][-1],
                     losses_dict['CTS'][id_sort][-1],
                 )
             )

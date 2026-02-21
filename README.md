@@ -1,7 +1,9 @@
-# SpaHybGen: Scene-Level Spatial Grasp Generation for General Robotic Hands
-SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
+# SpaHybGen: Learning Contact Representations in Real-World Clutter for General Robotic Grasping 
 
-> It is feasible to use your own robotic hands **without** [Contact Dataset Generation](#Contact-Dataset-Generation) and [Contact Training](#Contact-Training). To immediately use your cunstom robotic hands, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting up the [Code Environment](#code-environment)).
+SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
+
+> **IMPORTANT**: It is feasible to use your own robotic hands **without** [Contact Dataset Generation](#Contact-Dataset-Generation) and [Contact Training](#Contact-Training). To immediately use your custom robotic hands, please directly refer to [Pipeline: Grasp Generation](#pipeline-grasp-generation) (after setting the [Code Environment](#code-environment)).
+
 
 <br>
 
@@ -10,61 +12,21 @@ SpaHybGen generates grasp poses for general grippers in SE(3) clutter scenes usi
     <img src="assets/images/pipeline.jpg" width="95%" title="Pipeline of SpaHybGen">
   </div>
   <div align="center">
-    <figcaption><b>SpaHybGen</b></figcaption>
+    <figcaption><b>Scene-Level Spatial Grasp Generation for General Robotic Hands</b></figcaption>
   </div>
 </figure>
 
-## Demonstration
-### 1. Semi-cluttered grasping with seven robotic hands
+## Maintain schemes
+### 📦 Changelog
 
-<figure>
-  <div align="center">
-    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <img src="assets/images/general-semi-ver.jpg" width="75%" title="Grasping performance for seven robotic hands">
-    </a>
-    </div>
-    <div align="center">
-    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <figcaption><b>Video: Semi-cluttered grasping with seven robotic hands and multi-gripper simultaneous grasping</b></figcaption>
-    </a>
-  </div>
-</figure>
+#### 2025-02-20
+- Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
 
-### 2. Multi-gripper simultaneous grasping
-<figure>
-  <div align="center">
-    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <img src="assets/images/multigraspshardware.jpg" width="75%" title="">
-    </a>
-  </div>
-  <div align="center">
-    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
-      <figcaption><b>Video: Multi-gripper simultaneous grasping</b></figcaption>
-    </a>
-  </div>
-</figure>
-
-
-### 3. Dynamic grasp update in dense clutter grasping
-
-<figure>
-  <div align="center">
-    <a>
-      <img src="assets/images/dynamic-hardware-c.jpg" width="75%" title="Dynamic grasping setup">
-    </a>
-  </div>
-  <div align="center">
-    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
-      <img src="assets/images/dynamic-leap.jpg" width="75%" title="Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)">
-    </a>
-  </div>
-  <div align="center">
-    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
-      <figcaption><b>Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)</b></figcaption>
-    </a>
-  </div>
-</figure>
-
+### ✅ Planned Features
+- [ ] add module documentation and type hints
+- [ ] replace absolute path and magic number
+- [ ] Break down functions for clarity
+- [ ] More in-script modular test
 
 ## Code Environment
 We use Python 3.8 in Conda to train 3D U-Net, infer contacts, and optimize grasps.
@@ -84,13 +46,12 @@ export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True # for sklearn packa
 pip install graspnetAPI # for Graspnet Dataset
 ```
 
-2. Build and source the catkin workspace, or alternatively install the project locally in "editable" mode using pip: `pip install -e .` install of the following lines:
+2. Install the project locally in "editable" mode using pip: 
 ```bash
-catkin build spahybgen
-source /path to catkin_ws/devel/setup.sh
+pip install -e .
 ```
 
-> We realize that the setup of conda env. for GPU-based packages can be tricky in specific machines. The above instructions may be probably insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for reference.
+> We understand that the setup of conda for GPU-based python packages can be tricky in varied machine and the above instruction may be insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for reference.
 
 
 ## Contact Dataset Generation
@@ -189,6 +150,60 @@ This script is a combination of [2. Contact Inference](#2-contact-inference) and
 - Finally, [scripts/realrobot_execution.py](scripts/realrobot_execution.py) details a single-gripper grasping pipeline which includes hardware execution.
 
 > To enable ROS1 in Python3, please follow [Coding_Instruction](https://github.com/wangzivector/Coding_Instruction/blob/master/ROS_python3.md) to make `import rospy` and `import tf2_ros` working in python3.
+
+
+## Demonstration
+### 1. Semi-cluttered grasping with seven robotic hands
+
+<figure>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <img src="assets/images/general-semi-ver.jpg" width="75%" title="Grasping performance for seven robotic hands">
+    </a>
+    </div>
+    <div align="center">
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <figcaption><b>Video: Semi-cluttered grasping with seven robotic hands and multi-gripper simultaneous grasping</b></figcaption>
+    </a>
+  </div>
+</figure>
+
+### 2. Multi-gripper simultaneous grasping
+<figure>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <img src="assets/images/multigraspshardware.jpg" width="75%" title="">
+    </a>
+  </div>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=f7hdpRCiMNM">
+      <figcaption><b>Video: Multi-gripper simultaneous grasping</b></figcaption>
+    </a>
+  </div>
+</figure>
+
+
+### 3. Dynamic grasp update in dense clutter grasping
+
+<figure>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
+      <img src="assets/images/dynamic-hardware-c.jpg" width="75%" title="Dynamic grasping setup">
+    </a>
+  </div>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
+      <img src="assets/images/dynamic-leap.jpg" width="75%" title="Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)">
+    </a>
+  </div>
+  <div align="center">
+    <a href="https://www.youtube.com/watch?v=SueBvBfRTTg">
+      <figcaption><b>Video: Dynamic densely cluttered grasping (Roboitq-3F and LEAP Hand)</b></figcaption>
+    </a>
+  </div>
+</figure>
+
+
 
 ## Cite
 This research is not published.
