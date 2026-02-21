@@ -24,19 +24,19 @@ if __name__ == "__main__":
     parser.add_argument("--graspnet", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    
+
     graspnet_root = args.graspnet
     generate_root = args.output
     # generate_root = Path("path to project spahybgen/dataset/train")
 
     start_scene_index = 0
-    end_scene_index = 100 # For 100 training scene
+    end_scene_index = 100  # For 100 training scene
     scene_step = 1
     annotation_step = 4
     TSDF_volume_size = 0.4
     TSDF_discreteness = 80
     grasp_downsample_rate = 1.0 / 8
-    camera = 'kinect'
+    camera = "kinect"
     TSDF_SHIFT = np.vstack((np.c_[np.eye(3), np.array([0.32, 0.35, 0.10])], [0.0, 0.0, 0.0, 1.0]))
 
     print("Graspnet: {} \nResult: {}".format(graspnet_root.absolute(), generate_root.absolute()))
@@ -46,45 +46,92 @@ if __name__ == "__main__":
     sceneIds = range(sceneIds_task[0], sceneIds_task[1], sceneIds_task[2])
     annIds = range(annIds_task[0], annIds_task[1], annIds_task[2])
 
-    g = GraspNet(graspnet_root, camera=camera, split='all')
+    g = GraspNet(graspnet_root, camera=camera, split="all")
 
     # TSDF generation
-    total_jobs = ((sceneIds_task[1] - sceneIds_task[0])/annIds_task[2])*((annIds_task[1] - annIds_task[0])/sceneIds_task[2])
-    with tqdm(total=total_jobs) as pbar: # task process indication
-        pbar.set_description('==> DATASET CONVERSION [{},{}] <== '.format(sceneIds_task[0], sceneIds_task[1])) # task process indication
+    total_jobs = ((sceneIds_task[1] - sceneIds_task[0]) / annIds_task[2]) * (
+        (annIds_task[1] - annIds_task[0]) / sceneIds_task[2]
+    )
+    with tqdm(total=total_jobs) as pbar:  # task process indication
+        pbar.set_description(
+            "==> DATASET CONVERSION [{},{}] <== ".format(sceneIds_task[0], sceneIds_task[1])
+        )  # task process indication
         for sceneId in sceneIds:
             for annId in annIds:
-                pbar.update(1) # task process indication
-                
+                pbar.update(1)  # task process indication
+
                 # Generate and save scene tsdf file
-                depth = g.loadDepth(sceneId = sceneId, camera = camera, annId = annId).astype(np.float32) / 1000.0 # m
+                depth = (
+                    g.loadDepth(sceneId=sceneId, camera=camera, annId=annId).astype(np.float32) / 1000.0
+                )  # m
                 depth = ObsEng.depth_inpaint(depth)
-                depth_imgs = np.expand_dims(depth, axis = 0)
-                intrinsics, camera_poses = utils_dataio.GraspnetCameraInfo.fetch_IntExts(
-                    graspnet_root, sceneId, camera, depth.shape, align = True, base_shift = TSDF_SHIFT)
-                extrinsics_arrays = np.expand_dims(Transform.from_matrix(np.linalg.inv(camera_poses[annId])).to_list(), axis = 0)
-                
-                tsdf = ObsEng.create_tsdf(TSDF_volume_size, TSDF_discreteness, depth_imgs, intrinsics, extrinsics_arrays, trunc = 8)
+                depth_imgs = np.expand_dims(depth, axis=0)
+                (intrinsics, camera_poses,) = utils_dataio.GraspnetCameraInfo.fetch_IntExts(
+                    graspnet_root,
+                    sceneId,
+                    camera,
+                    depth.shape,
+                    align=True,
+                    base_shift=TSDF_SHIFT,
+                )
+                extrinsics_arrays = np.expand_dims(
+                    Transform.from_matrix(np.linalg.inv(camera_poses[annId])).to_list(),
+                    axis=0,
+                )
+
+                tsdf = ObsEng.create_tsdf(
+                    TSDF_volume_size,
+                    TSDF_discreteness,
+                    depth_imgs,
+                    intrinsics,
+                    extrinsics_arrays,
+                    trunc=8,
+                )
                 tsdf_grid = tsdf.get_grid()
                 utils_dataio.write_tsdf_grid(generate_root, sceneId, annId, tsdf_grid)
 
-                voxel = ObsEng.create_voxel(TSDF_volume_size, TSDF_discreteness, depth_imgs, intrinsics, extrinsics_arrays)
+                voxel = ObsEng.create_voxel(
+                    TSDF_volume_size,
+                    TSDF_discreteness,
+                    depth_imgs,
+                    intrinsics,
+                    extrinsics_arrays,
+                )
                 voxel_grid = voxel.get_grid()
                 utils_dataio.write_voxel_grid(generate_root, sceneId, annId, voxel_grid)
-                
+
                 # Grasp label information from GraspnetAPI
-                grasps_6d = g.loadGrasp(sceneId = sceneId, annId = annId, format = '6d', camera = camera, fric_coef_thresh = 0.2)
-                sample_6d_grasp_group = grasps_6d.random_sample(int(len(grasps_6d)*grasp_downsample_rate))
+                grasps_6d = g.loadGrasp(
+                    sceneId=sceneId,
+                    annId=annId,
+                    format="6d",
+                    camera=camera,
+                    fric_coef_thresh=0.2,
+                )
+                sample_6d_grasp_group = grasps_6d.random_sample(int(len(grasps_6d) * grasp_downsample_rate))
 
                 # GraspnetAPI-grasps to vgn-grasp to raw tips
-                grasps_vis, df_raw_grasps = GraspType.Graspnets2Grasps(sample_6d_grasp_group, camera_poses[annId], sceneId, annId)
+                grasps_vis, df_raw_grasps = GraspType.Graspnets2Grasps(
+                    sample_6d_grasp_group, camera_poses[annId], sceneId, annId
+                )
                 tips_data = GraspType.Grasp2Tips(df_raw_grasps)
 
                 # create voxel-based tips data from raw tips
-                df_VoxelTips = GraspType.Tips2TipsDF(tips_data, TSDF_volume_size, TSDF_discreteness, interp_ratios = [0.8, 1.0], scene_grid = voxel_grid, grid_type='voxel')
-                utils_dataio.write_df(df_VoxelTips, generate_root, sceneId, annId, name = "VoxelTips")
+                df_VoxelTips = GraspType.Tips2TipsDF(
+                    tips_data,
+                    TSDF_volume_size,
+                    TSDF_discreteness,
+                    interp_ratios=[0.8, 1.0],
+                    scene_grid=voxel_grid,
+                    grid_type="voxel",
+                )
+                utils_dataio.write_df(df_VoxelTips, generate_root, sceneId, annId, name="VoxelTips")
 
                 # create voxel-based wrenches data from raw tips
-                df_Wrens = GraspType.Tips2WrensDF(tips_data, TSDF_volume_size, TSDF_discreteness, interp_ratios = [0.8, 1.0])
-                utils_dataio.write_df(df_Wrens, generate_root, sceneId, annId, name = "VoxelWrens")
-
+                df_Wrens = GraspType.Tips2WrensDF(
+                    tips_data,
+                    TSDF_volume_size,
+                    TSDF_discreteness,
+                    interp_ratios=[0.8, 1.0],
+                )
+                utils_dataio.write_df(df_Wrens, generate_root, sceneId, annId, name="VoxelWrens")

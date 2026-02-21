@@ -21,7 +21,7 @@ def main(args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     kwargs = {"num_workers": args.loaders, "pin_memory": True} if use_cuda else {}
-    ntargs = {"voxel_discreteness": 80, "orientation": args.orientation, "augment":args.augment}
+    ntargs = {"voxel_discreteness": 80, "orientation": args.orientation, "augment": args.augment}
 
     # create log directory
     time_stamp = datetime.now().strftime("%m-%d-%H-%M")
@@ -42,17 +42,26 @@ def main(args):
     logdir = args.logdir / description
     # create data loaders
     train_loader, val_loader = create_train_val_loaders(
-        args.dataset, args.batch_size, args.val_split, args.numsample, args.orientation, args.gridtype, args.datatype, kwargs
+        args.dataset,
+        args.batch_size,
+        args.val_split,
+        args.numsample,
+        args.orientation,
+        args.gridtype,
+        args.datatype,
+        kwargs,
     )
-    
+
     # build the network
     net = get_network(args.net, ntargs).to(device)
     # visulize network
-    summary(net, (1, ntargs["voxel_discreteness"], ntargs["voxel_discreteness"], ntargs["voxel_discreteness"]))
+    summary(
+        net, (1, ntargs["voxel_discreteness"], ntargs["voxel_discreteness"], ntargs["voxel_discreteness"])
+    )
 
     # define optimizer and metrics
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 20, gamma=1/2) # args.epochs//5
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 20, gamma=1 / 2)  # args.epochs//5
 
     metrics = {
         "loss": Average(lambda out: out[3]),
@@ -68,14 +77,26 @@ def main(args):
     }
 
     # create ignite engines for training and validation
-    trainer = create_trainer(net, optimizer, metrics, device, loss_fn, args.fn_score, args.orientation, args.fn_wrench, args.datatype)
-    evaluator = create_evaluator(net, eval_metrics, device, loss_fn, args.fn_score, args.orientation, args.fn_wrench, args.datatype)
+    trainer = create_trainer(
+        net,
+        optimizer,
+        metrics,
+        device,
+        loss_fn,
+        args.fn_score,
+        args.orientation,
+        args.fn_wrench,
+        args.datatype,
+    )
+    evaluator = create_evaluator(
+        net, eval_metrics, device, loss_fn, args.fn_score, args.orientation, args.fn_wrench, args.datatype
+    )
 
     # log training progress to the terminal and tensorboard
     ProgressBar(persist=True, ascii=True).attach(trainer)
 
     data_writer = create_summary_writers_simple(net, device, logdir)
-    
+
     @trainer.on(Events.ITERATION_COMPLETED)
     def log_train_process(engine):
         output, it = trainer.state.output, trainer.state.iteration
@@ -83,7 +104,6 @@ def main(args):
         data_writer.add_scalar("loss_score_process", output[4], it * length_ita)
         data_writer.add_scalar("loss_rot_process", output[5], it * length_ita)
         data_writer.add_scalar("loss_wrench_process", output[6], it * length_ita)
-
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_train_results(engine):
@@ -113,30 +133,40 @@ def main(args):
         require_empty=True,
         save_as_state_dict=True,
     )
-    trainer.add_event_handler(
-        Events.EPOCH_COMPLETED(every=8), checkpoint_handler_tens, {args.net: net}
-    )
+    trainer.add_event_handler(Events.EPOCH_COMPLETED(every=8), checkpoint_handler_tens, {args.net: net})
 
     # run the training loop
     trainer.run(train_loader, max_epochs=args.epochs)
 
 
-def create_train_val_loaders(root, batch_size, val_split, numsample, orientation, grid_type, data_type, kwargs):
+def create_train_val_loaders(
+    root, batch_size, val_split, numsample, orientation, grid_type, data_type, kwargs
+):
     # load the dataset
-    dataset = Dataset(root, numsample=numsample, orientation_type=orientation, grid_type=grid_type, data_type=data_type)
+    dataset = Dataset(
+        root, numsample=numsample, orientation_type=orientation, grid_type=grid_type, data_type=data_type
+    )
     # split into train and validation sets
     val_size = int(val_split * len(dataset))
     train_size = len(dataset) - val_size
     train_set, val_set = torch.utils.data.random_split(dataset, [train_size, val_size])
     # create loaders for both datasets
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=batch_size, shuffle=True, drop_last=True, 
-        collate_fn=Dataset.collate_fn_concatenate if data_type == 'Indexed' else Dataset.collate_fn_full,
-        **kwargs)
+        train_set,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=True,
+        collate_fn=Dataset.collate_fn_concatenate if data_type == "Indexed" else Dataset.collate_fn_full,
+        **kwargs
+    )
     val_loader = torch.utils.data.DataLoader(
-        val_set, batch_size=batch_size, shuffle=False, drop_last=True, 
-        collate_fn=Dataset.collate_fn_concatenate if data_type == 'Indexed' else Dataset.collate_fn_full,
-        **kwargs)
+        val_set,
+        batch_size=batch_size,
+        shuffle=False,
+        drop_last=True,
+        collate_fn=Dataset.collate_fn_concatenate if data_type == "Indexed" else Dataset.collate_fn_full,
+        **kwargs
+    )
     return train_loader, val_loader
 
 
@@ -146,10 +176,10 @@ def create_trainer(net, optimizer, metrics, device, loss_fn, fn_score, fn_rot, f
         optimizer.zero_grad()
 
         # forward
-        if datatype == 'Indexed':
+        if datatype == "Indexed":
             x, y, index = prepare_batch_concatenate(batch, device, datatype)
             y_pred = select_concatenate(net(x), index)
-        elif datatype == 'Full':
+        elif datatype == "Full":
             x, y = prepare_batch_concatenate(batch, device, datatype)
             y_pred = net(x)
 
@@ -173,10 +203,10 @@ def create_evaluator(net, metrics, device, loss_fn, fn_score, fn_rot, fn_wrench,
         net.eval()
         with torch.no_grad():
             # forward
-            if datatype == 'Indexed':
+            if datatype == "Indexed":
                 x, y, index = prepare_batch_concatenate(batch, device, datatype)
                 y_pred = select_concatenate(net(x), index)
-            elif datatype == 'Full':
+            elif datatype == "Full":
                 x, y = prepare_batch_concatenate(batch, device, datatype)
                 y_pred = net(x)
 
@@ -192,7 +222,7 @@ def create_evaluator(net, metrics, device, loss_fn, fn_score, fn_rot, fn_wrench,
 
 
 def prepare_batch_concatenate(batch, device, datatype):
-    if datatype == 'Indexed':
+    if datatype == "Indexed":
         tsdf, (scores, rotations, wrenches), (indexs_contact, indexs_wrench) = batch
         tsdf = tsdf.to(device)
         scores = scores.float().to(device)
@@ -202,7 +232,7 @@ def prepare_batch_concatenate(batch, device, datatype):
         indexs_wrench = indexs_wrench.to(torch.long).to(device)
         # tsdf.shape:  torch.Size([32, 1, 80, 80, 80])
         return tsdf, (scores, rotations, wrenches), (indexs_contact, indexs_wrench)
-    elif datatype == 'Full':
+    elif datatype == "Full":
         tsdf, (scores, rotations, wrenches) = batch
         tsdf = tsdf.to(device)
         scores = scores.float().to(device)
@@ -214,9 +244,13 @@ def prepare_batch_concatenate(batch, device, datatype):
 def select_concatenate(out, index):
     score_out, rot_out, wrench_out = out
     contact_indexs, wrench_indexs = index
-    score = score_out[contact_indexs[:, 0], :, contact_indexs[:, 1], contact_indexs[:, 2], contact_indexs[:, 3]].squeeze()
+    score = score_out[
+        contact_indexs[:, 0], :, contact_indexs[:, 1], contact_indexs[:, 2], contact_indexs[:, 3]
+    ].squeeze()
     rot = rot_out[contact_indexs[:, 0], :, contact_indexs[:, 1], contact_indexs[:, 2], contact_indexs[:, 3]]
-    wrench = wrench_out[wrench_indexs[:, 0], :, wrench_indexs[:, 1], wrench_indexs[:, 2], wrench_indexs[:, 3]].squeeze()
+    wrench = wrench_out[
+        wrench_indexs[:, 0], :, wrench_indexs[:, 1], wrench_indexs[:, 2], wrench_indexs[:, 3]
+    ].squeeze()
     return score, rot, wrench
 
 
@@ -230,32 +264,37 @@ def loss_fn(y_pred, y, fn_score, fn_rot, fn_wrench):
         loss_rot = loss_rot.unsqueeze(dim=1)
 
     ## original
-    loss = loss_score.mean() + (scores*loss_rot).mean() + loss_wrench.mean()
-    return loss, torch.abs(score_pred - scores).mean(), (scores * loss_rot_moni).mean(), torch.abs(wrench_pred - wrenches).mean()
+    loss = loss_score.mean() + (scores * loss_rot).mean() + loss_wrench.mean()
+    return (
+        loss,
+        torch.abs(score_pred - scores).mean(),
+        (scores * loss_rot_moni).mean(),
+        torch.abs(wrench_pred - wrenches).mean(),
+    )
 
 
 def _qual_loss_fn(pred, target, loss_fn_name="CEL"):
-    if loss_fn_name == "FCL": 
+    if loss_fn_name == "FCL":
         alpha, gamma, eps = 1, 1, 1e-6
         dis_soft = torch.abs(pred - target)
-        focal_loss = -1 * alpha * dis_soft ** gamma * torch.log((1.0 - dis_soft) + eps)
+        focal_loss = -1 * alpha * dis_soft**gamma * torch.log((1.0 - dis_soft) + eps)
         return focal_loss
 
-    elif loss_fn_name == "MSEL": 
+    elif loss_fn_name == "MSEL":
         return F.mse_loss(pred, target, reduction="none")
 
-    elif loss_fn_name == "CEL": 
+    elif loss_fn_name == "CEL":
         return F.binary_cross_entropy(pred, target, reduction="none")
 
 
 def _wrench_loss_fn(pred, target, loss_fn_name="CEL"):
-    if loss_fn_name == "FCL": 
+    if loss_fn_name == "FCL":
         alpha, gamma, eps = 1, 1, 1e-6
         dis_soft = torch.abs(pred - target)
-        focal_loss = -1 * alpha * dis_soft ** gamma * torch.log((1.0 - dis_soft) + eps)
+        focal_loss = -1 * alpha * dis_soft**gamma * torch.log((1.0 - dis_soft) + eps)
         return focal_loss
 
-    elif loss_fn_name == "MSEL": 
+    elif loss_fn_name == "MSEL":
         return F.mse_loss(pred, target, reduction="none")
 
     elif loss_fn_name == "CEL":
