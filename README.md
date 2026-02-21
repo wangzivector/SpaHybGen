@@ -17,13 +17,13 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 </figure>
 
 ## Maintain schemes
-✅ Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
-✅ Replaced absolute path and magic number
-[ ] Polish contact assignment script
-[ ] Break down functions for clarity
-[ ] Add module documentation and type hints
-[ ] More in-script modular test
-[ ] Task-oriented objectives and manipulation hand primitives
+- ✅ Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
+- ✅ Replaced absolute path and magic number
+- [ ] Polish contact assignment script
+- [ ] Break down functions for clarity
+- [ ] Add module documentation and type hints
+- [ ] More in-script modular test
+- [ ] Task-oriented objectives and manipulation hand primitives
 
 
 ## Code Environment
