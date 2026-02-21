@@ -17,16 +17,14 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 </figure>
 
 ## Maintain schemes
-### 📦 Changelog
-
-#### 2026-02-20
 - Added autmatic objective scaling strategy to optimization modules, replacing constant hand-tuned obejective scales.
 
-### ✅ Planned Features
-- [ ] add module documentation and type hints
-- [ ] replace absolute path and magic number
+- [ ] Replace absolute path and magic number
 - [ ] Break down functions for clarity
+- [ ] Add module documentation and type hints
 - [ ] More in-script modular test
+- [ ] Task-oriented objectives and manipulation hand primitives
+
 
 ## Code Environment
 We use Python 3.8 in Conda to train 3D U-Net, infer contacts, and optimize grasps.
