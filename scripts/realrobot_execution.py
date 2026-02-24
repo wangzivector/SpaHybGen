@@ -1,4 +1,5 @@
 import os
+from typing import Any
 import rospy
 from datetime import datetime
 from spahybgen.pipeline.param_server import GraspParameter
@@ -8,7 +9,12 @@ from spahybgen.pipeline.pose_node import PoseNode
 from spahybgen.pipeline.gripper_node import GripperNode
 
 
-def pipeline(cfg_file):
+def pipeline(cfg_file: str):
+    """hardware managemetn pipeline for real world experiment execution
+
+    Args:
+        cfg_file: configuration file for hardwares
+    """
     GP = GraspParameter(cfg_file, echo=True)
 
     ## All hardware nodes
@@ -110,7 +116,16 @@ def pipeline(cfg_file):
     rospy.spin()
 
 
-def input_signal(reminder="Enter to contine", supple_txt="[0:End, 9:Retn] "):
+def input_signal(reminder: str = "Enter to contine", supple_txt: str = "[0:End, 9:Retn] "):
+    """Control function for executing one step
+
+    Args:
+        reminder: description of step. Defaults to "Enter to contine".
+        supple_txt: supplementary text to display before the reminder. Defaults to "[0:End, 9:Retn] ".
+
+    Returns:
+        whether to continue the execution flow, False if return 9, True if return other keys except 0, and exit if return 0.
+    """
     a = input(supple_txt + reminder)
     if a == "0":
         rospy.signal_shutdown("Key interrupt down.")
@@ -119,7 +134,18 @@ def input_signal(reminder="Enter to contine", supple_txt="[0:End, 9:Retn] "):
     return a != "9"
 
 
-def excute_graspactions(action_flow, gripper_client, pose_node, action_prefix):
+def excute_graspactions(action_flow: list, gripper_client: Any, pose_node: Any, action_prefix: str):
+    """execution information output and execution
+
+    Args:
+        action_flow: multiple action list
+        gripper_client: gripper node
+        pose_node: node of robot arm
+        action_prefix: description of action type
+
+    Returns:
+        execution state
+    """
     for action in action_flow:
         if not input_signal(
             "[{}]: ".format(action_prefix)

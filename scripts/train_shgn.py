@@ -1,5 +1,6 @@
 # Inherent from [VGN](https://github.com/ethz-asl/vgn)
 
+from typing import Any, Tuple
 import argparse
 from pathlib import Path
 from datetime import datetime
@@ -11,8 +12,9 @@ from ignite.engine import Engine, Events
 from ignite.handlers import ModelCheckpoint
 from ignite.metrics import Average
 import torch
-
-from torch.utils import tensorboard
+import torch.utils.data
+from torch import Tensor
+from torch.utils.tensorboard.writer import SummaryWriter
 import torch.nn.functional as F
 from torchsummary import summary
 
@@ -99,11 +101,16 @@ def main(args):
 
     @trainer.on(Events.ITERATION_COMPLETED)
     def log_train_process(engine):
+        """Debug logger for training process
+
+        Args:
+            engine: engine
+        """
         output, it = trainer.state.output, trainer.state.iteration
-        length_ita = 6400 // trainer.state.epoch_length
-        data_writer.add_scalar("loss_score_process", output[4], it * length_ita)
-        data_writer.add_scalar("loss_rot_process", output[5], it * length_ita)
-        data_writer.add_scalar("loss_wrench_process", output[6], it * length_ita)
+        length_ita = len(trainer.state.dataloader) // trainer.state.epoch_length  # type: ignore
+        data_writer.add_scalar("loss_score_process", output[4], it * length_ita)  # type: ignore
+        data_writer.add_scalar("loss_rot_process", output[5], it * length_ita)  # type: ignore
+        data_writer.add_scalar("loss_wrench_process", output[6], it * length_ita)  # type: ignore
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_train_results(engine):
@@ -140,8 +147,29 @@ def main(args):
 
 
 def create_train_val_loaders(
-    root, batch_size, val_split, numsample, orientation, grid_type, data_type, kwargs
-):
+    root: str,
+    batch_size: int,
+    val_split: float,
+    numsample: int,
+    orientation: str,
+    grid_type: str,
+    data_type: str,
+    kwargs,
+) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
+    """create training and validation data loaders
+    Args:
+        root: root directory of the dataset
+        batch_size: batch size for training and validation
+        val_split: ratio of validation set split from the whole dataset
+        numsample: number of samples to be drawn from each scene in each epoch
+        orientation: representation of the output orientation,
+                        can be "quat", "so3" or "R6d"
+        grid_type: type of input grid, can be "voxel" or "tsdf"
+        data_type: type of data, can be "Indexed" or "Full"
+        kwargs: additional arguments for DataLoader
+    Returns:
+        train_loader, val_loader
+    """
     # load the dataset
     dataset = Dataset(
         root, numsample=numsample, orientation_type=orientation, grid_type=grid_type, data_type=data_type
@@ -170,7 +198,32 @@ def create_train_val_loaders(
     return train_loader, val_loader
 
 
-def create_trainer(net, optimizer, metrics, device, loss_fn, fn_score, fn_rot, fn_wrench, datatype):
+def create_trainer(
+    net: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    metrics: dict,
+    device: torch.device,
+    loss_fn: Any,
+    fn_score: str,
+    fn_rot: str,
+    fn_wrench: str,
+    datatype: str,
+) -> Engine:
+    """create ignite trainer for training the network
+    Args:
+        net: the network to be trained
+        optimizer: optimizer for training
+        metrics: dictionary of metrics to be logged during training
+        device: device for training
+        loss_fn: loss function for training
+        fn_score: loss function for score prediction, can be "CEL", "MSEL"
+        fn_rot: loss function for rotation prediction, can be "quat", "so3" or "R6d"
+        fn_wrench: loss function for wrench prediction, can be "CEL", "MSEL"
+        datatype: type of data, can be "Indexed" or "Full"
+    Returns:
+        trainer
+    """
+
     def _update(_, batch):
         net.train()
         optimizer.zero_grad()
@@ -198,7 +251,30 @@ def create_trainer(net, optimizer, metrics, device, loss_fn, fn_score, fn_rot, f
     return trainer
 
 
-def create_evaluator(net, metrics, device, loss_fn, fn_score, fn_rot, fn_wrench, datatype):
+def create_evaluator(
+    net: torch.nn.Module,
+    metrics: dict,
+    device: torch.device,
+    loss_fn: Any,
+    fn_score: str,
+    fn_rot: str,
+    fn_wrench: str,
+    datatype: str,
+) -> Engine:
+    """create ignite evaluator for evaluating the network
+    Args:
+        net: the network to be evaluated
+        metrics: dictionary of metrics to be logged during evaluation
+        device: device for evaluation
+        loss_fn: loss function for evaluation
+        fn_score: loss function for score prediction, can be "CEL", "MSEL"
+        fn_rot: loss function for rotation prediction, can be "quat", "so3" or "R6d"
+        fn_wrench: loss function for wrench prediction, can be "CEL", "MSEL"
+        datatype: type of data, can be "Indexed" or "Full"
+    Returns:
+        evaluator
+    """
+
     def _inference(_, batch):
         net.eval()
         with torch.no_grad():
@@ -221,7 +297,19 @@ def create_evaluator(net, metrics, device, loss_fn, fn_score, fn_rot, fn_wrench,
     return evaluator
 
 
-def prepare_batch_concatenate(batch, device, datatype):
+def prepare_batch_concatenate(batch: tuple, device: torch.device, datatype: str) -> Any:
+    """convert batch data to neat matrix
+
+    Args:
+        batch: original batch data from dataloader
+        device: device for training or evaluation
+        datatype: type of data, can be "Indexed" or "Full"
+
+    Returns:
+        x: input data for the network
+        y: ground truth for the network output
+        index: index for selecting the output of the network when datatype is "Indexed"
+    """
     if datatype == "Indexed":
         tsdf, (scores, rotations, wrenches), (indexs_contact, indexs_wrench) = batch
         tsdf = tsdf.to(device)
@@ -241,7 +329,17 @@ def prepare_batch_concatenate(batch, device, datatype):
         return tsdf, (scores, rotations, wrenches)
 
 
-def select_concatenate(out, index):
+def select_concatenate(out: Tuple, index: Tuple) -> Tuple[Tensor, Tensor, Tensor]:
+    """select the output of the network according to the index when datatype is "Indexed"
+
+    Args:
+        out: output of the network, including score, rotation and wrench
+        index: index for selecting the output of the network, including contact index for
+        score and rotation, and wrench index for wrench
+
+    Returns:
+        score, rotation and wrench predictions selected from the network output
+    """
     score_out, rot_out, wrench_out = out
     contact_indexs, wrench_indexs = index
     score = score_out[
@@ -254,7 +352,28 @@ def select_concatenate(out, index):
     return score, rot, wrench
 
 
-def loss_fn(y_pred, y, fn_score, fn_rot, fn_wrench):
+def loss_fn(
+    y_pred: Tuple[Tensor, Tensor, Tensor],
+    y: Tuple[Tensor, Tensor, Tensor],
+    fn_score: str,
+    fn_rot: str,
+    fn_wrench: str,
+) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    """compute the loss for training and evaluation
+
+    Args:
+        y_pred: output of the network, including score, rotation and wrench predictions
+        y: ground truth for the network output, including score, rotation and wrench
+        fn_score: loss function for score prediction, can be "CEL", "MSEL"
+        fn_rot: loss function for rotation prediction, can be "quat", "so3" or "R6d"
+        fn_wrench: loss function for wrench prediction, can be "CEL", "MSEL"
+
+    Returns:
+        loss: total loss for training or evaluation
+        loss_score: loss for score prediction
+        loss_rot: loss for rotation prediction
+        loss_wrench: loss for wrench prediction
+    """
     scores, rotations, wrenches = y
     score_pred, rotation_pred, wrench_pred = y_pred
     loss_score = _qual_loss_fn(score_pred, scores, fn_score)
@@ -273,7 +392,17 @@ def loss_fn(y_pred, y, fn_score, fn_rot, fn_wrench):
     )
 
 
-def _qual_loss_fn(pred, target, loss_fn_name="CEL"):
+def _qual_loss_fn(pred: Tensor, target: Tensor, loss_fn_name: str = "CEL") -> Tensor:
+    """compute the loss for score prediction
+
+    Args:
+        pred: score prediction from the network
+        target: ground truth for the score
+        loss_fn_name: loss function for score prediction, can be "CEL", "MSEL"
+
+    Returns:
+        loss for score prediction
+    """
     if loss_fn_name == "FCL":
         alpha, gamma, eps = 1, 1, 1e-6
         dis_soft = torch.abs(pred - target)
@@ -285,9 +414,21 @@ def _qual_loss_fn(pred, target, loss_fn_name="CEL"):
 
     elif loss_fn_name == "CEL":
         return F.binary_cross_entropy(pred, target, reduction="none")
+    else:
+        raise ValueError("Unknown loss function for score prediction.")
 
 
-def _wrench_loss_fn(pred, target, loss_fn_name="CEL"):
+def _wrench_loss_fn(pred: Tensor, target: Tensor, loss_fn_name: str = "CEL") -> Tensor:
+    """compute the loss for wrench prediction
+
+    Args:
+        pred: wrench prediction from the network
+        target: ground truth for the wrench
+        loss_fn_name: loss function for wrench prediction, can be "CEL", "MSEL
+
+    Returns:
+        loss for wrench prediction
+    """
     if loss_fn_name == "FCL":
         alpha, gamma, eps = 1, 1, 1e-6
         dis_soft = torch.abs(pred - target)
@@ -299,44 +440,106 @@ def _wrench_loss_fn(pred, target, loss_fn_name="CEL"):
 
     elif loss_fn_name == "CEL":
         return F.binary_cross_entropy(pred, target, reduction="none")
+    else:
+        raise ValueError("Unknown loss function for wrench prediction.")
 
 
-def _rot_loss_fn(pred, target, loss_fn_name="quat"):
+def _rot_loss_fn(pred: Tensor, target: Tensor, loss_fn_name: str = "quat") -> Tuple[Tensor, Tensor]:
+    """compute the loss for rotation prediction
+
+    Args:
+        pred: rotation prediction from the network
+        target: ground truth for the rotation
+        loss_fn_name: loss function for rotation prediction, can be "quat", "so3" or "R6d"
+
+    Returns:
+        loss for rotation prediction, and the loss for monitoring rotation prediction
+    """
     if loss_fn_name == "quat":
         return _quat_loss_fn(pred, target)
     if loss_fn_name == "so3":
         return _so3_loss_fn(pred, target)
     if loss_fn_name == "R6d":
         return _R6d_loss_fn(pred, target)
+    else:
+        raise ValueError("Unknown loss function for rotation prediction.")
 
 
-def _quat_loss_fn(pred, target):
+def _quat_loss_fn(pred: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    """compute the loss for quaternion rotation prediction
+
+    Args:
+        pred: quaternion rotation prediction from the network, with shape [batch_size, 4]
+        target: ground truth for the quaternion rotation, with shape [batch_size, 4]
+
+    Returns:
+        loss for quaternion rotation prediction, and the loss for monitoring quaternion
+    """
     loss_q = 1.0 - torch.abs(torch.sum(pred * target, dim=1))
     return loss_q, loss_q
 
 
-def _so3_loss_fn(pred, target):
+def _so3_loss_fn(pred: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    """compute the loss for so3 rotation prediction
+
+     Args:
+        pred: so3 rotation prediction from the network, with shape [batch_size, 3]
+        target: ground truth for the so3 rotation, with shape [batch_size, 3]
+
+    Returns:
+        loss for so3 rotation prediction, and the loss for monitoring so3
+    """
     loss_so3_abs = torch.abs(pred - target).mean(dim=1)
     return loss_so3_abs, loss_so3_abs
 
 
-def _R6d_loss_fn(pred, target):
+def _R6d_loss_fn(pred: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    """compute the loss for R6d rotation prediction
+
+    Args:
+        pred: R6d rotation prediction from the network, with shape [batch_size, 6]
+        target: ground truth for the R6d rotation, with shape [batch_size, 6]
+
+    Returns:
+        loss for R6d rotation prediction, and the loss for monitoring R6d
+    """
     loss_R6d_abs = torch.abs(pred - target).mean(dim=1)
     return loss_R6d_abs, loss_R6d_abs
 
 
-def create_summary_writers_simple(net, device, log_dir):
+def create_summary_writers_simple(net: torch.nn.Module, device: torch.device, log_dir: Path) -> SummaryWriter:
+    """create a simple summary writer for logging training and validation results to tensorboard
+
+    Args:
+        net: the network to be trained
+        device: device for training
+        log_dir: directory for logging
+    Returns:
+        summary writer
+    """
     logdata_path = log_dir / "logdata"
-    logdata_writer = tensorboard.SummaryWriter(logdata_path, flush_secs=30)
+    logdata_writer = SummaryWriter(logdata_path, flush_secs=30)
     return logdata_writer
 
 
-def create_summary_writers(net, device, log_dir):
+def create_summary_writers(
+    net: torch.nn.Module, device: torch.device, log_dir: Path
+) -> Tuple[SummaryWriter, SummaryWriter]:
+    """create summary writers for logging training and validation results to tensorboard
+
+     Args:
+        net: the network to be trained
+        device: device for training
+        log_dir: directory for logging
+
+    Returns:
+        train_writer, val_writer
+    """
     train_path = log_dir / "train"
     val_path = log_dir / "validation"
 
-    train_writer = tensorboard.SummaryWriter(train_path, flush_secs=30)
-    val_writer = tensorboard.SummaryWriter(val_path, flush_secs=30)
+    train_writer = SummaryWriter(train_path, flush_secs=30)
+    val_writer = SummaryWriter(val_path, flush_secs=30)
 
     return train_writer, val_writer
 

@@ -2,7 +2,7 @@ from datetime import datetime
 import numpy as np
 from spahybgen.pipeline.grasp_optimization import GraspOptimization
 from pathlib import Path
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard.writer import SummaryWriter
 import argparse
 
 if __name__ == "__main__":

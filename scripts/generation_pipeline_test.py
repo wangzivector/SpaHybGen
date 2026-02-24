@@ -7,7 +7,7 @@ from spahybgen.networks import load_network
 from pathlib import Path
 from datetime import datetime
 from spahybgen.pipeline.grasp_optimization import GraspOptimization
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard.writer import SummaryWriter
 import argparse
 
 if __name__ == "__main__":
