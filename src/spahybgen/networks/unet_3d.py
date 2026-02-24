@@ -90,7 +90,8 @@ class UpConv3DBlock(nn.Module):
             )
 
     def forward(self, input: Tensor, residual: Optional[Tensor] = None) -> Tensor:
-        """network forward feed
+        """
+        network forward feed
         :param input -> input Tensor
         :param residual -> residual connection to be concatenated with input
         :return -> Tensor
@@ -187,7 +188,8 @@ class UNet3D(nn.Module):
         )
 
     def forward(self, input: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
-        """network forward feed
+        """
+        network forward feed
         :param input -> input Tensor
         :return -> Tuple[Tensor, Tensor, Tensor]
         """

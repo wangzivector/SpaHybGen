@@ -1,33 +1,77 @@
-### Reference from [VGN](https://github.com/ethz-asl/vgn)
-
 from builtins import super
-
+from typing import Tuple
 import torch
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-def conv(in_channels, out_channels, kernel_size):
+def conv(in_channels: int, out_channels: int, kernel_size: int):
+    """conv layer
+
+    Args:
+        in_channels: in channel number
+        out_channels: out channel number
+        kernel_size: kernel size of conv layer
+
+    Returns:
+        nn module of conv layer
+    """
     return nn.Conv3d(in_channels, out_channels, kernel_size, padding=kernel_size // 2)
 
 
-def conv_stride(in_channels, out_channels, kernel_size):
+def conv_stride(in_channels: int, out_channels: int, kernel_size: int):
+    """conv layer with stride 2
+    Args:
+        in_channels: in channel number
+        out_channels: out channel number
+        kernel_size: kernel size of conv layer
+    Returns:
+        nn module of conv layer with stride 2
+    """
     return nn.Conv3d(in_channels, out_channels, kernel_size, stride=2, padding=kernel_size // 2)
 
 
-def count_num_trainable_parameters(net):
+def count_num_trainable_parameters(net: nn.Module) -> int:
+    """count the number of trainable parameters in the network
+
+    Args:
+        net: nn.Module of the network
+
+    Returns:
+        number of trainable parameters
+    """
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_channels, filters, kernels):
+    """Reference from [VGN](https://github.com/ethz-asl/vgn)
+
+    Args:
+        in_channels: number of input channels
+        filters: list of filter numbers for each conv layer
+        kernels: list of kernel sizes for each conv layer
+
+    Returns:
+        nn module of the encoder
+    """
+
+    def __init__(self, in_channels: int, filters: list, kernels: list):
         super().__init__()
         self.conv1 = conv_stride(in_channels, filters[0], kernels[0])
         self.conv2 = conv_stride(filters[0], filters[1], kernels[1])
         self.conv3 = conv_stride(filters[1], filters[2], kernels[2])
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """network forward feed
+
+        Args:
+            x: input Tensor
+
+        Returns:
+            Tensor
+        """
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
         x = self.relu(self.conv3(x))
@@ -36,7 +80,18 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, in_channels, filters, kernels, voxel_size):
+    """Reference from [VGN](https://github.com/ethz-asl/vgn)
+
+    Args:
+        in_channels: number of input channels
+        filters: list of filter numbers for each conv layer
+        kernels: list of kernel sizes for each conv layer
+        voxel_size: output voxel size
+    Returns:
+        nn module of the decoder
+    """
+
+    def __init__(self, in_channels: int, filters: list, kernels: list, voxel_size: int):
         super().__init__()
         self.voxel_size = voxel_size
         self.conv1 = conv(in_channels, filters[0], kernels[0])
@@ -44,7 +99,15 @@ class Decoder(nn.Module):
         self.conv3 = conv(filters[1], filters[2], kernels[2])
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """network forward feed
+
+        Args:
+            x: input Tensor
+
+        Returns:
+            Tensor
+        """
         x = self.relu(self.conv1(x))
         x = F.interpolate(x, self.voxel_size // 4)
 
@@ -57,6 +120,15 @@ class Decoder(nn.Module):
 
 
 class VGN(nn.Module):
+    """Full network architecture of VGN
+    Args:
+        voxel_discreteness: discretization of the output voxel grid
+        orientation: representation of the output orientation, can be "quat", "so3" or "R6d"
+            augment: whether to use data augmentation, which will increase the number of filters in the network
+    Returns:
+        nn module of the VGN network
+    """
+
     def __init__(self, voxel_discreteness=80, orientation="quat", augment=False):
         super().__init__()
         self.voxel_discreteness = voxel_discreteness
@@ -77,7 +149,15 @@ class VGN(nn.Module):
             rot_head_size = 6
         self.conv_rot = conv(filters_de[-1], rot_head_size, 5)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        """network forward feed
+
+        Args:
+            x: input Tensor
+
+        Returns:
+            Tuple of output score, orientation and wrench estimates
+        """
         x = self.encoder(x)
         x = self.decoder(x)
         out_score = torch.sigmoid(self.conv_score(x))
