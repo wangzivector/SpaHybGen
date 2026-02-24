@@ -6,14 +6,11 @@ from geometry_msgs.msg import Vector3Stamped
 from sensor_msgs.msg import JointState
 
 
-"""
-Gripper Client Node
-"""
 class GripperNode:
+    """Gripper Client Node"""
+
     def __init__(self, gripper):
-        """
-        Grippers: "robotiq2f", "robotiq3f", "finray2f", "finray4f", "softpneu3f", "brunelhand"
-        """
+        """Grippers: "robotiq2f", "robotiq3f", "finray2f", "finray4f", "softpneu3f", "brunelhand" """
         self.gripper = gripper
 
         ServerHint = {
@@ -35,10 +32,10 @@ class GripperNode:
             "brunelhand": self.brunelhand_execution,
             "leaphand": self.leaphand_execution,
         }
-        
+
         PublisherMsgName = {
-            "robotiq2f":  "gripper_action_" + "ROBOTIQ_2F",
-            "robotiq3f":  "gripper_action_" + "ROBOTIQ_3F",
+            "robotiq2f": "gripper_action_" + "ROBOTIQ_2F",
+            "robotiq3f": "gripper_action_" + "ROBOTIQ_3F",
             "finray2f": "easy_gripper_cmd",
             "finray4f": "easy_gripper_cmd",
             "softpneu3f": "gripper_action_" + "BSG",
@@ -57,23 +54,23 @@ class GripperNode:
         }
 
         GripperTFName = {
-            "robotiq2f": 'base_link',
-            "robotiq3f": 'base',
-            "finray2f": 'base_link',
-            "finray4f": 'base_link',
-            "softpneu3f": 'base_link',
-            "brunelhand": 'base',
-            "leaphand": 'base_link',
+            "robotiq2f": "base_link",
+            "robotiq3f": "base",
+            "finray2f": "base_link",
+            "finray4f": "base_link",
+            "softpneu3f": "base_link",
+            "brunelhand": "base",
+            "leaphand": "base_link",
         }
 
         GripperTFName_vis = {
-            "robotiq2f": 'robotiq2f1/base_link',
-            "robotiq3f": 'robotiq3f1/base',
-            "finray2f": 'finray2f1/base_link',
-            "finray4f": 'finray4f1/base_link',
-            "softpneu3f": 'softpneu3f1/base_link',
-            "brunelhand": 'brunelhand1/base',
-            "leaphand": 'leaphand1/base_link',
+            "robotiq2f": "robotiq2f1/base_link",
+            "robotiq3f": "robotiq3f1/base",
+            "finray2f": "finray2f1/base_link",
+            "finray4f": "finray4f1/base_link",
+            "softpneu3f": "softpneu3f1/base_link",
+            "brunelhand": "brunelhand1/base",
+            "leaphand": "leaphand1/base_link",
         }
 
         Armend2Gripper = {
@@ -86,39 +83,40 @@ class GripperNode:
             "leaphand": 0.00,
         }
 
-        self.gripper_pulisher = rospy.Publisher(PublisherMsgName[gripper], PublisherMsgType[gripper], queue_size=1)
-        
+        self.gripper_pulisher = rospy.Publisher(
+            PublisherMsgName[gripper], PublisherMsgType[gripper], queue_size=1
+        )
+
         self.gripper_tfname = GripperTFName[gripper]
         self.gripper_tfname_vis = GripperTFName_vis[gripper]
         self.armend2gripper = Armend2Gripper[gripper]
         self.gripper2grip = 0.0
-        
+
         self.grasp_execution = ExecutionFun[gripper]
 
         rospy.loginfo("[Gripper]: {} server: \n{}".format(gripper, ServerHint[gripper]))
-    
 
     def robotiq2f_execution(self, action_name, joints):
         """
-        opening_distance: the actual distance of opening [m] 
+        opening_distance: the actual distance of opening [m]
         palm_position: the position of angle or distance of some grippers
         """
-
+        raise NotImplementedError("robotiq2f_execution is not implemented yet")
 
     def robotiq3f_execution(self, action_name, joints):
         """
-        opening_distance: the actual distance of opening [m] 
+        opening_distance: the actual distance of opening [m]
         palm_position: the position of angle or distance of some grippers
         rostopic pub /gripper_action_ROBOTIQ_3F  std_msgs/Int16MultiArray  '{data:[0, 0, 150, 255]}'  -1
         """
-
+        raise NotImplementedError("robotiq3f_execution is not implemented yet")
 
     def finrays_execution(self, action_name, joints):
-        '''
+        """
         rosrun rosserial_python serial_node.py /dev/rfcomm0
         rostopic pub /easy_gripper_cmd geometry_msgs/Vector3Stamped   '{header: {frame_id:  STEP},  vector: {x: .0}}'  -1
-        '''
-
+        """
+        raise NotImplementedError("finrays_execution is not implemented yet")
 
     def softpneu3f_execution(self, action_name, joints):
         """
@@ -126,23 +124,23 @@ class GripperNode:
         palm_position: the position of angle or distance of some grippers
         rostopic pub /gripper_action_BSG  std_msgs/Float32MultiArray  '{data:[0.0, 0.0, 0.0]}'  -1
         """
-
+        raise NotImplementedError("softpneu3f_execution is not implemented yet")
 
     def brunelhand_execution(self, action_name, joints):
         """
-        opening_distance: the actual distance of opening [m] 
+        opening_distance: the actual distance of opening [m]
         palm_position: the position of angle or distance of some grippers
         rosrun gripper_server brunelhand.py
         rostopic pub /brunel_cmd  std_msgs/Float32MultiArray  '{data:[0.0, 0.0, 0.0, 0.0]}'  -1
-        joint 1-4 -> [thumb, index, fore, rear-two]: 0.0: open, 1.0: close 
+        joint 1-4 -> [thumb, index, fore, rear-two]: 0.0: open, 1.0: close
         """
-
+        raise NotImplementedError("brunelhand_execution is not implemented yet")
 
     def leaphand_execution(self, action_name, joints):
         """
         self.leap_position = rospy.ServiceProxy('/leap_position', leap_position)
         #self.leap_velocity = rospy.ServiceProxy('/leap_velocity', leap_velocity)
         #self.leap_effort = rospy.ServiceProxy('/leap_effort', leap_effort)
-        self.pub_hand = rospy.Publisher("/leaphand_node/cmd_ones", JointState, queue_size = 3) 
+        self.pub_hand = rospy.Publisher("/leaphand_node/cmd_ones", JointState, queue_size = 3)
         """
-
+        raise NotImplementedError("leaphand_execution is not implemented yet")

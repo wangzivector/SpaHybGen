@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def conv(in_channels: int, out_channels: int, kernel_size: int):
+def conv(in_channels: int, out_channels: int, kernel_size: int) -> nn.Module:
     """conv layer
 
     Args:
@@ -20,7 +20,7 @@ def conv(in_channels: int, out_channels: int, kernel_size: int):
     return nn.Conv3d(in_channels, out_channels, kernel_size, padding=kernel_size // 2)
 
 
-def conv_stride(in_channels: int, out_channels: int, kernel_size: int):
+def conv_stride(in_channels: int, out_channels: int, kernel_size: int) -> nn.Module:
     """conv layer with stride 2
     Args:
         in_channels: in channel number
