@@ -38,7 +38,7 @@ if __name__ == "__main__":
     )
 
     q_trajectory, losses_dict = grasp_generation.run_optimization(
-        scene_infer_map=inferred_result,
+        scene_infer_map_np=inferred_result,
         max_iter=max_iter,
         tb_writer=tb_writer,
         running_name=running_name,

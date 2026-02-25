@@ -137,7 +137,7 @@ class PoseNode:
         self,
         father_frame: str,
         child_frame: str,
-        PosRotVec: list,
+        PosRotVec: np.ndarray,
         add_prefix: Tuple[bool, bool] = (False, False),
     ) -> None:
         """Publish a dynamic transformation to the TF tree, which can be used for visualization and execution
@@ -208,7 +208,10 @@ class PoseNode:
 
     @staticmethod
     def PosRotToTransMsg(
-        father_frame: str, child_frame: str, translation: List, rot_vecter: List
+        father_frame: str,
+        child_frame: str,
+        translation: Union[np.ndarray, list],
+        rot_vecter: Union[np.ndarray, list],
     ) -> TransformStamped:
         """Convert a position and rotation vector to a TransformStamped message for broadcasting to the TF tree
 
