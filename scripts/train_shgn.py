@@ -147,7 +147,7 @@ def main(args):
 
 
 def create_train_val_loaders(
-    root: str,
+    root: Path,
     batch_size: int,
     val_split: float,
     numsample: int,

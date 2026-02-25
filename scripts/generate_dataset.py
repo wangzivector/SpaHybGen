@@ -8,7 +8,7 @@
 
 # Manage data path
 from pathlib import Path
-from graspnetAPI import GraspNet
+from graspnetAPI import GraspGroup, GraspNet
 from tqdm import tqdm
 import numpy as np
 import argparse
@@ -111,6 +111,9 @@ if __name__ == "__main__":
                 sample_6d_grasp_group = grasps_6d.random_sample(int(len(grasps_6d) * grasp_downsample_rate))
 
                 # GraspnetAPI-grasps to vgn-grasp to raw tips
+                assert isinstance(
+                    sample_6d_grasp_group, GraspGroup
+                ), "The input grasp group should be in GraspGroup format"
                 grasps_vis, df_raw_grasps = GraspType.Graspnets2Grasps(
                     sample_6d_grasp_group, camera_poses[annId], sceneId, annId
                 )

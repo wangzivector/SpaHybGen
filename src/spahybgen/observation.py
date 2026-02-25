@@ -1,134 +1,7 @@
 # Inherent from [VGN](https://github.com/ethz-asl/vgn)
-
-from math import cos, sin
-import time
-
 import numpy as np
 import open3d as o3d
-
 from spahybgen.utils.utils_trans_np import Transform
-
-
-class TSDFVolume(object):
-    """Integration of multiple depth images using a TSDF."""
-
-    def __init__(self, size, resolution, origin=np.array([0.0, 0.0, 0.0]), trunc=4):
-        self.size = size
-        self.resolution = resolution
-        self.voxel_size = self.size / self.resolution
-        self.sdf_trunc = trunc * self.voxel_size
-        self.origin = origin
-
-        self._volume = o3d.pipelines.integration.UniformTSDFVolume(
-            length=self.size,
-            resolution=self.resolution,
-            sdf_trunc=self.sdf_trunc,
-            color_type=o3d.pipelines.integration.TSDFVolumeColorType.NoColor,
-            origin = self.origin
-        )
-
-    def integrate(self, depth_img, intrinsic, extrinsic):
-        """
-        Args:
-            depth_img: The depth image.
-            intrinsic: The intrinsic parameters of a pinhole camera model.
-            extrinsics: The transform from the TSDF to camera coordinates, T_eye_task.
-        """
-        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
-            o3d.geometry.Image(np.empty_like(depth_img)),
-            o3d.geometry.Image(depth_img),
-            depth_scale=1.0,
-            depth_trunc=2.0,
-            convert_rgb_to_intensity=False,
-        )
-
-        intrinsic = o3d.camera.PinholeCameraIntrinsic(
-            width=intrinsic.width,
-            height=intrinsic.height,
-            fx=intrinsic.fx,
-            fy=intrinsic.fy,
-            cx=intrinsic.cx,
-            cy=intrinsic.cy,
-        )
-
-        extrinsic = extrinsic.as_matrix()
-
-        self._volume.integrate(rgbd, intrinsic, extrinsic)
-
-    def get_grid(self):
-        cloud = self._volume.extract_voxel_point_cloud()
-        points = np.asarray(cloud.points)
-        distances = np.asarray(cloud.colors)[:, 0]
-        grid = np.zeros((self.resolution, self.resolution, self.resolution), dtype=np.float32)
-        voxelinds = np.floor(points / self.voxel_size).astype(int)
-        grid[voxelinds[:,0], voxelinds[:,1], voxelinds[:,2]] = distances
-        # for idx, point in enumerate(points):
-        #     i, j, k = np.floor(point / self.voxel_size).astype(int)
-        #     grid[0, i, j, k] = distances[idx]
-        return np.expand_dims(grid, axis=0)
-
-    def get_cloud(self):
-        return self._volume.extract_point_cloud()
-
-
-def create_tsdf(size, resolution, depth_imgs, intrinsic, extrinsics, trunc=4):
-    tsdf = TSDFVolume(size, resolution, trunc=trunc)
-    for i in range(depth_imgs.shape[0]):
-        extrinsic = Transform.from_list(extrinsics[i])
-        tsdf.integrate(depth_imgs[i], intrinsic, extrinsic)
-    return tsdf
-
-
-class VoxelVolume(object):
-    """Integration of multiple depth images for Voxel."""
-
-    def __init__(self, size, resolution, origin=np.array([0.0, 0.0, 0.0])):
-        self.size = size
-        self.resolution = resolution
-        self.voxel_size = self.size / self.resolution
-        self.origin = origin
-
-        # setup dense voxel grid
-        self.voxel_carving = o3d.geometry.VoxelGrid.create_dense(
-            width=self.size,
-            height=self.size,
-            depth=self.size,
-            voxel_size=self.size / self.resolution,
-            origin=self.origin,
-            color=[1.0, 1.0, 1.0])
-        
-
-    def integrate(self, depth_img, intrinsic, extrinsic):
-        intrinsic = o3d.camera.PinholeCameraIntrinsic(
-            width=intrinsic.width,
-            height=intrinsic.height,
-            fx=intrinsic.fx,
-            fy=intrinsic.fy,
-            cx=intrinsic.cx,
-            cy=intrinsic.cy,
-        )
-        extrinsic = extrinsic.as_matrix()
-        param = o3d.camera.PinholeCameraParameters()
-        param.intrinsic = intrinsic
-        param.extrinsic = extrinsic
-
-        self.voxel_carving.carve_depth_map(o3d.geometry.Image(depth_img), param)
-
-    def get_grid(self):
-        voxels = self.voxel_carving.get_voxels()
-        grid = np.zeros((1, self.resolution, self.resolution, self.resolution), dtype=np.float32)
-        for voxel in voxels:
-            i, j, k = voxel.grid_index[0], voxel.grid_index[1], voxel.grid_index[2]
-            grid[0, i, j, k] = voxel.color[0]
-        return grid
-    
-
-def create_voxel(size, resolution, depth_imgs, intrinsic, extrinsics):
-    voxel = VoxelVolume(size, resolution)
-    for i in range(depth_imgs.shape[0]):
-        extrinsic = Transform.from_list(extrinsics[i])
-        voxel.integrate(depth_imgs[i], intrinsic, extrinsic)
-    return voxel
 
 
 class CameraIntrinsic(object):
@@ -184,22 +57,209 @@ class CameraIntrinsic(object):
         return intrinsic
 
 
-def depth_inpaint(image, missing_value=0):
+class TSDFVolume(object):
+    """Integration of multiple depth images using a TSDF.
+
+    Args:
+        size: The physical size of the volume in meters.
+        resolution: The number of voxels along each axis.
+        origin: The origin of the volume in the world frame, in meters.
+        trunc: The truncation distance for the TSDF, in multiples of the voxel size.
     """
-    Inpaint missing values in depth image.
-    :param missing_value: Value to fill in the depth image.
+
+    def __init__(
+        self, size: float, resolution: int, origin: np.ndarray = np.array([0.0, 0.0, 0.0]), trunc: int = 4
+    ) -> None:
+        self.size = size
+        self.resolution = resolution
+        self.voxel_size = self.size / self.resolution
+        self.sdf_trunc = trunc * self.voxel_size
+        self.origin = origin
+
+        self._volume = o3d.pipelines.integration.UniformTSDFVolume(
+            length=self.size,
+            resolution=self.resolution,
+            sdf_trunc=self.sdf_trunc,
+            color_type=o3d.pipelines.integration.TSDFVolumeColorType.NoColor,
+            origin=self.origin,
+        )
+
+    def integrate(self, depth_img: np.ndarray, intrinsic: CameraIntrinsic, extrinsic: Transform) -> None:
+        """caving the depth image into the TSDF volume
+        Args:
+            depth_img: The depth image
+            intrinsic: The intrinsic parameters of a pinhole camera model
+            extrinsics: The transform from the TSDF to camera coordinates
+        """
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            o3d.geometry.Image(np.empty_like(depth_img)),
+            o3d.geometry.Image(depth_img),
+            depth_scale=1.0,
+            depth_trunc=2.0,
+            convert_rgb_to_intensity=False,
+        )
+
+        intrinsic = o3d.camera.PinholeCameraIntrinsic(
+            width=intrinsic.width,
+            height=intrinsic.height,
+            fx=intrinsic.fx,
+            fy=intrinsic.fy,
+            cx=intrinsic.cx,
+            cy=intrinsic.cy,
+        )
+
+        extrinsic_mat = extrinsic.as_matrix()
+
+        self._volume.integrate(rgbd, intrinsic, extrinsic_mat)
+
+    def get_grid(self) -> np.ndarray:
+        """Extract the TSDF grid from the volume, in shape of (1, D, H, W)"""
+        cloud = self._volume.extract_voxel_point_cloud()
+        points = np.asarray(cloud.points)
+        distances = np.asarray(cloud.colors)[:, 0]
+        grid = np.zeros((self.resolution, self.resolution, self.resolution), dtype=np.float32)
+        voxelinds = np.floor(points / self.voxel_size).astype(int)
+        grid[voxelinds[:, 0], voxelinds[:, 1], voxelinds[:, 2]] = distances
+        # for idx, point in enumerate(points):
+        #     i, j, k = np.floor(point / self.voxel_size).astype(int)
+        #     grid[0, i, j, k] = distances[idx]
+        return np.expand_dims(grid, axis=0)
+
+    def get_cloud(self) -> o3d.geometry.PointCloud:
+        return self._volume.extract_point_cloud()
+
+
+def create_tsdf(
+    size: float,
+    resolution: int,
+    depth_imgs: np.ndarray,
+    intrinsic: CameraIntrinsic,
+    extrinsics: np.ndarray,
+    trunc=4,
+) -> TSDFVolume:
+    """Create a TSDF volume from multiple depth images and extract the TSDF grid
+
+    Args:
+        size: The physical size of the volume in meters.
+        resolution: The number of voxels along each axis.
+        depth_imgs: The input depth images, in shape of (n, H, W)
+        intrinsic: The intrinsic parameters of a pinhole camera model
+        extrinsics: The transforms from the TSDF to camera coordinates
+        trunc: The truncation distance for the TSDF, in multiples of the voxel size.
+
+    Returns:
+        tsdf: The TSDF volume object
     """
-    # cv2 inpainting doesn't handle the border properly
-    # https://stackoverflow.com/questions/25974033/inpainting-depth-map-still-a-black-image-border
+    tsdf = TSDFVolume(size, resolution, trunc=trunc)
+    for i in range(depth_imgs.shape[0]):
+        extrinsic = Transform.from_list(extrinsics[i])
+        tsdf.integrate(depth_imgs[i], intrinsic, extrinsic)
+    return tsdf
+
+
+class VoxelVolume(object):
+    """Integration of multiple depth images for Voxel
+
+    Args:
+        size: The physical size of the volume in meters.
+        resolution: The number of voxels along each axis.
+        origin: The origin of the volume in the world frame, in meters.
+    """
+
+    def __init__(self, size: float, resolution: int, origin: np.ndarray = np.array([0.0, 0.0, 0.0])) -> None:
+        self.size = size
+        self.resolution = resolution
+        self.voxel_size = self.size / self.resolution
+        self.origin = origin
+
+        # setup dense voxel grid
+        self.voxel_carving = o3d.geometry.VoxelGrid.create_dense(
+            width=self.size,
+            height=self.size,
+            depth=self.size,
+            voxel_size=self.size / self.resolution,
+            origin=self.origin,
+            color=[1.0, 1.0, 1.0],
+        )
+
+    def integrate(self, depth_img: np.ndarray, intrinsic: CameraIntrinsic, extrinsic: Transform) -> None:
+        """caving the depth image into the voxel volume
+
+        Args:
+            depth_img: The depth image
+            intrinsic: The intrinsic parameters of a pinhole camera model
+            extrinsics: The transform from the voxel volume to camera coordinates
+        """
+        intrinsic = o3d.camera.PinholeCameraIntrinsic(
+            width=intrinsic.width,
+            height=intrinsic.height,
+            fx=intrinsic.fx,
+            fy=intrinsic.fy,
+            cx=intrinsic.cx,
+            cy=intrinsic.cy,
+        )
+        extrinsic_mat = extrinsic.as_matrix()
+        param = o3d.camera.PinholeCameraParameters()
+        param.intrinsic = intrinsic
+        param.extrinsic = extrinsic_mat
+
+        self.voxel_carving.carve_depth_map(o3d.geometry.Image(depth_img), param)
+
+    def get_grid(self) -> np.ndarray:
+        """Extract the voxel grid from the volume, in shape of (1, D, H, W)
+
+        Returns:
+            grid: The voxel grid, in shape of (1, D, H, W)"""
+        voxels = self.voxel_carving.get_voxels()
+        grid = np.zeros((1, self.resolution, self.resolution, self.resolution), dtype=np.float32)
+        for voxel in voxels:
+            i, j, k = voxel.grid_index[0], voxel.grid_index[1], voxel.grid_index[2]
+            grid[0, i, j, k] = voxel.color[0]
+        return grid
+
+
+def create_voxel(
+    size: float, resolution: int, depth_imgs: np.ndarray, intrinsic: CameraIntrinsic, extrinsics: np.ndarray
+) -> VoxelVolume:
+    """Create a voxel volume from multiple depth images and extract the voxel grid
+
+    Args:
+        size: The physical size of the volume in meters.
+        resolution: The number of voxels along each axis.
+        depth_imgs: The input depth images, in shape of (n, H, W)
+        intrinsic: The intrinsic parameters of a pinhole camera model
+        extrinsics: The transforms from the voxel volume to camera coordinates
+
+    Returns:
+        voxel: The voxel volume object
+    """
+
+    voxel = VoxelVolume(size, resolution)
+    for i in range(depth_imgs.shape[0]):
+        extrinsic = Transform.from_list(extrinsics[i])
+        voxel.integrate(depth_imgs[i], intrinsic, extrinsic)
+    return voxel
+
+
+def depth_inpaint(image: np.ndarray, missing_value: float = 0):
+    """Inpaint missing values in depth image.
+    cv2 inpainting doesn't handle the border properly
+    https://stackoverflow.com/questions/25974033/inpainting-depth-map-still-a-black-image-border
+
+    Args:
+      image: The depth image to be inpainted.
+      missing_value: Value to fill in the depth image.
+    """
     import cv2
+
     image = cv2.copyMakeBorder(image, 1, 1, 1, 1, cv2.BORDER_DEFAULT)
     mask = (image == missing_value).astype(np.uint8)
     # Scale to keep as float, but has to be in bounds -1:1 to keep opencv happy.
     imax, imin = np.abs(image).max(), np.abs(image).min()
     irange = imax - imin
-    image = ((image - imin) / irange).astype(np.float32) # Has be float32, 64 not supported. get -1:1
-    image = cv2.inpaint(image, mask, 2, cv2.INPAINT_NS) # repair with fluid alg. radius 1
+    image = ((image - imin) / irange).astype(np.float32)  # Has be float32, 64 not supported. get -1:1
+    image = cv2.inpaint(image, mask, 2, cv2.INPAINT_NS)  # repair with fluid alg. radius 1
     # Back to original size and value range.
-    image = image[1:-1, 1:-1] # cut the 1 pixel boarder
+    image = image[1:-1, 1:-1]  # cut the 1 pixel boarder
     image = image.astype(np.float32) * irange + imin
     return image
