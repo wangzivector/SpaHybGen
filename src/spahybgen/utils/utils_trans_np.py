@@ -1,98 +1,109 @@
-# Inherent from [VGN](https://github.com/ethz-asl/vgn) and 
+# Inherent from [VGN](https://github.com/ethz-asl/vgn) and
 # [On the Continuity of Rotation Representations in Neural Networks](https://github.com/papagina/RotationContinuity/tree/master) and
 # [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp)
 
+from typing import Union
 import numpy as np
 import scipy.spatial.transform as tf_tool
 from spahybgen.utils.lie_groups.numpy import SO3
+from scipy.spatial.transform import Rotation
 
 
-def normalize_vector(v):
-        # batch*n
-        batch=v.shape[0]
-        v_mag = np.sqrt(np.power(v, 2).sum(axis=1)) # batch
-        v_mag = np.maximum(v_mag, 1e-8)
-        v_mag = np.tile(np.reshape(v_mag, (batch, 1)), (1, v.shape[1]))
-        v = v / v_mag
-        return v
+def normalize_vector(v: np.ndarray) -> np.ndarray:
+    # batch*n
+    batch = v.shape[0]
+    v_mag = np.sqrt(np.power(v, 2).sum(axis=1))  # batch
+    v_mag = np.maximum(v_mag, 1e-8)
+    v_mag = np.tile(np.reshape(v_mag, (batch, 1)), (1, v.shape[1]))
+    v = v / v_mag
+    return v
+
 
 # u, v batch*n
-def cross_product(u, v):
+def cross_product(u: np.ndarray, v: np.ndarray) -> np.ndarray:
     batch = u.shape[0]
-    #print (u.shape)
-    #print (v.shape)
-    i = u[:,1]*v[:,2] - u[:,2]*v[:,1]
-    j = u[:,2]*v[:,0] - u[:,0]*v[:,2]
-    k = u[:,0]*v[:,1] - u[:,1]*v[:,0]
-    out = np.stack((i.reshape((batch)), j.reshape((batch)), k.reshape((batch))), axis = 1)#batch*3
+    # print (u.shape)
+    # print (v.shape)
+    i = u[:, 1] * v[:, 2] - u[:, 2] * v[:, 1]
+    j = u[:, 2] * v[:, 0] - u[:, 0] * v[:, 2]
+    k = u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0]
+    out = np.stack((i.reshape((batch)), j.reshape((batch)), k.reshape((batch))), axis=1)  # batch*3
     return out
 
 
-def quat2so3(rotations):
-    _rotations_so3 = [SO3.log(SO3.from_quaternion(rot_single, ordering='xyzw')) for rot_single in rotations]
+def quat2so3(rotations: np.ndarray) -> np.ndarray:
+    _rotations_so3 = [SO3.log(SO3.from_quaternion(rot_single, ordering="xyzw")) for rot_single in rotations]
     return np.array(_rotations_so3).astype(np.float32)
 
 
-def so32quat(rotations):
-    rotations_quat = [SO3.exp(rot_single).to_quaternion(ordering='xyzw') for rot_single in rotations]
+def so32quat(rotations: np.ndarray) -> np.ndarray:
+    rotations_quat = [SO3.exp(rot_single).to_quaternion(ordering="xyzw") for rot_single in rotations]
     return np.array(rotations_quat).astype(np.float32)
 
 
-def quat2R6d(quaternion, re_R9d=False):
+def quat2R6d(quaternion: np.ndarray, re_R9d: bool = False) -> np.ndarray:
+    """
     ## To Rotation 6D details see: https://zhouyisjtu.github.io/project_rotation/rotation.html
     ## and code in: https://github.com/papagina/RotationContinuity/tree/master
     #   quaternion batch*4
+    """
     is_batch = True
-    if len(quaternion.shape) == 1: 
+    if len(quaternion.shape) == 1:
         is_batch = False
         quaternion = np.expand_dims(quaternion, axis=0)
 
-    batch=quaternion.shape[0]
+    batch = quaternion.shape[0]
     quat = normalize_vector(quaternion)
-    qx = np.reshape(quat[...,0], (batch, 1))
-    qy = np.reshape(quat[...,1], (batch, 1))
-    qz = np.reshape(quat[...,2], (batch, 1))
-    qw = np.reshape(quat[...,3], (batch, 1))
-    # Unit quaternion rotation matrices computatation  
-    xx = qx*qx
-    yy = qy*qy
-    zz = qz*qz
-    xy = qx*qy
-    xz = qx*qz
-    yz = qy*qz
-    xw = qx*qw
-    yw = qy*qw
-    zw = qz*qw
-    row0 = np.stack((1-2*yy-2*zz, 2*xy - 2*zw, 2*xz + 2*yw), axis=1) #batch*3
-    row1 = np.stack((2*xy+ 2*zw,  1-2*xx-2*zz, 2*yz-2*xw  ), axis=1) #batch*3
-    row2 = np.stack((2*xz-2*yw,   2*yz+2*xw,   1-2*xx-2*yy), axis=1) #batch*3
-    matrix = np.stack([row0.reshape((batch, 3)), row1.reshape((batch, 3)), row2.reshape((batch, 3))], axis=2) #batch*3*3
+    qx = np.reshape(quat[..., 0], (batch, 1))
+    qy = np.reshape(quat[..., 1], (batch, 1))
+    qz = np.reshape(quat[..., 2], (batch, 1))
+    qw = np.reshape(quat[..., 3], (batch, 1))
+    # Unit quaternion rotation matrices computatation
+    xx = qx * qx
+    yy = qy * qy
+    zz = qz * qz
+    xy = qx * qy
+    xz = qx * qz
+    yz = qy * qz
+    xw = qx * qw
+    yw = qy * qw
+    zw = qz * qw
+    row0 = np.stack((1 - 2 * yy - 2 * zz, 2 * xy - 2 * zw, 2 * xz + 2 * yw), axis=1)  # batch*3
+    row1 = np.stack((2 * xy + 2 * zw, 1 - 2 * xx - 2 * zz, 2 * yz - 2 * xw), axis=1)  # batch*3
+    row2 = np.stack((2 * xz - 2 * yw, 2 * yz + 2 * xw, 1 - 2 * xx - 2 * yy), axis=1)  # batch*3
+    matrix = np.stack(
+        [row0.reshape((batch, 3)), row1.reshape((batch, 3)), row2.reshape((batch, 3))], axis=2
+    )  # batch*3*3
     mat_R6d = np.hstack((matrix[:, 0, :].reshape(batch, 3), matrix[:, 1, :].reshape(batch, 3)))
-    if re_R9d: return matrix.astype(np.float32)
-    if not is_batch: mat_R6d = mat_R6d.squeeze()
+    if re_R9d:
+        return matrix.astype(np.float32)
+    if not is_batch:
+        mat_R6d = mat_R6d.squeeze()
     return mat_R6d.astype(np.float32)
 
 
-#poses batch*6
-def R6d2R9d(poses):
+# poses batch*6
+def R6d2R9d(poses: np.ndarray) -> np.ndarray:
+    """To Rotation 9D details see: https://zhouyisjtu.github.io/project_rotation/rotation.html"""
     is_batch = True
-    if len(poses.shape) == 1: 
+    if len(poses.shape) == 1:
         is_batch = False
         poses = np.expand_dims(poses, axis=0)
 
-    x_raw = poses[:,0:3] # batch*3
-    y_raw = poses[:,3:6] # batch*3
-        
-    x = normalize_vector(x_raw) # batch*3
-    z = cross_product(x,y_raw) # batch*3
-    z = normalize_vector(z) # batch*3
-    y = cross_product(z,x) # batch*3
-        
-    x = x.reshape((-1,3))
-    y = y.reshape((-1,3))
-    z = z.reshape((-1,3))
-    matrix = np.stack((x,y,z), axis=2) #batch*3*3
-    if not is_batch: matrix = matrix.squeeze()
+    x_raw = poses[:, 0:3]  # batch*3
+    y_raw = poses[:, 3:6]  # batch*3
+
+    x = normalize_vector(x_raw)  # batch*3
+    z = cross_product(x, y_raw)  # batch*3
+    z = normalize_vector(z)  # batch*3
+    y = cross_product(z, x)  # batch*3
+
+    x = x.reshape((-1, 3))
+    y = y.reshape((-1, 3))
+    z = z.reshape((-1, 3))
+    matrix = np.stack((x, y, z), axis=2)  # batch*3*3
+    if not is_batch:
+        matrix = matrix.squeeze()
     return matrix
 
 
@@ -134,7 +145,7 @@ def weighted_average_quaternions(quaternions, weights):
         raise ValueError("At least one weight must be greater than zero")
 
     # scale
-    mat_a = (1.0/weight_sum) * mat_a
+    mat_a = (1.0 / weight_sum) * mat_a
 
     # compute eigenvalues and -vectors
     eigen_values, eigen_vectors = np.linalg.eig(mat_a)
@@ -144,12 +155,6 @@ def weighted_average_quaternions(quaternions, weights):
 
     # return the real part of the largest eigenvector (has only real part)
     return np.real(np.ravel(eigen_vectors[:, 0]))
-
-
-class Rotation(tf_tool.Rotation):
-    @classmethod
-    def identity(cls):
-        return cls.from_quat([0.0, 0.0, 0.0, 1.0])
 
 
 class Transform(object):
@@ -167,21 +172,19 @@ class Transform(object):
         self.rotation = rotation
         self.translation = np.asarray(translation, np.double)
 
-    def as_matrix(self):
+    def as_matrix(self) -> np.ndarray:
         """Represent as a 4x4 matrix."""
-        return np.vstack(
-            (np.c_[self.rotation.as_matrix(), self.translation], [0.0, 0.0, 0.0, 1.0])
-        )
+        return np.vstack((np.c_[self.rotation.as_matrix(), self.translation], [0.0, 0.0, 0.0, 1.0]))
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Serialize Transform object into a dictionary."""
         return {
             "rotation": self.rotation.as_quat().tolist(),
             "translation": self.translation.tolist(),
         }
 
-    def to_list(self):
-        return np.r_[self.rotation.as_quat(), self.translation]
+    def to_list(self) -> list:
+        return np.r_[self.rotation.as_quat(), self.translation].tolist()
 
     def __mul__(self, other):
         """Compose this transform with another."""
@@ -189,10 +192,10 @@ class Transform(object):
         translation = self.rotation.apply(other.translation) + self.translation
         return self.__class__(rotation, translation)
 
-    def transform_point(self, point):
+    def transform_point(self, point: np.ndarray) -> np.ndarray:
         return self.rotation.apply(point) + self.translation
 
-    def transform_vector(self, vector):
+    def transform_vector(self, vector: np.ndarray) -> np.ndarray:
         return self.rotation.apply(vector)
 
     def inverse(self):
@@ -202,26 +205,26 @@ class Transform(object):
         return self.__class__(rotation, translation)
 
     @classmethod
-    def from_matrix(cls, m):
+    def from_matrix(cls, m: np.ndarray):
         """Initialize from a 4x4 matrix."""
         rotation = Rotation.from_matrix(m[:3, :3])
         translation = m[:3, 3]
         return cls(rotation, translation)
 
     @classmethod
-    def from_dict(cls, dictionary):
+    def from_dict(cls, dictionary: dict):
         rotation = Rotation.from_quat(dictionary["rotation"])
         translation = np.asarray(dictionary["translation"])
         return cls(rotation, translation)
 
     @classmethod
-    def from_list(cls, list):
+    def from_list(cls, list: list):
         rotation = Rotation.from_quat(list[:4])
         translation = list[4:]
         return cls(rotation, translation)
-    
+
     @classmethod
-    def from_list_transrotvet(cls, list):
+    def from_list_transrotvet(cls, list: Union[list, np.ndarray]):
         translation = list[:3]
         rotation = Rotation.from_rotvec(list[3:])
         return cls(rotation, translation)
@@ -234,7 +237,7 @@ class Transform(object):
         return cls(rotation, translation)
 
     @classmethod
-    def look_at(cls, eye, center, up):
+    def look_at(cls, eye: np.ndarray, center: np.ndarray, up: np.ndarray):
         """Initialize with a LookAt matrix.
 
         Returns:

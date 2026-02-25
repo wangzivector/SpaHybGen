@@ -55,37 +55,38 @@ def visualize_vectors_in_df(df_vectors, voxel_size):
         # indexs_uvw = np.array([int(nums[0]), int(nums[1]), int(nums[2])])
         location_xyz = indexs_uvw * voxel_size
         tip_vector = {}
-        tip_vector['score'] = df_vectors.loc[label]['weighted_score']
-        quat = df_vectors.loc[label][['mean_qx', 'mean_qy', 'mean_qz', 'mean_qw']].to_numpy()
-        pose_tran = Transform.from_list(np.hstack([quat, location_xyz]))
-        pose_vector = np.array([[0., 0., 0.], [0., 0., 0.01]]) # visualize z-axis
+        tip_vector["score"] = df_vectors.loc[label]["weighted_score"]
+        quat = df_vectors.loc[label][["mean_qx", "mean_qy", "mean_qz", "mean_qw"]].to_numpy()
+        pose_tran = Transform.from_list(np.hstack([quat, location_xyz]).tolist())
+        pose_vector = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.01]])  # visualize z-axis
         pose_vector = pose_tran.transform_point(pose_vector)
-        tip_vector['points'] = pose_vector
+        tip_vector["points"] = pose_vector
         tips_vectors.append(tip_vector)
     return tips_vectors
 
 
 def visualize_vectors_in_array(array_tips, array_scores, voxel_size, is_list=False):
     tips_vectors = []
-    pose_vector_ori = np.array([[0., 0., 0.], [0., 0., 0.01]]) # visualize z-axis
+    pose_vector_ori = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.01]])  # visualize z-axis
     for ind, (pose, score) in enumerate(zip(array_tips, array_scores)):
         if not is_list:
             location_xyz = pose[1] * voxel_size
-            pose_tran = Transform.from_list(np.hstack([pose[0].as_quat(), location_xyz]))
-        else: 
+            pose_tran = Transform.from_list(np.hstack([pose[0].as_quat(), location_xyz]).tolist())
+        else:
             pose[4:] = pose[4:] * voxel_size
             pose_tran = Transform.from_list(pose)
 
         tip_vector = {}
-        tip_vector['score'] = score
-        tip_vector['points'] = pose_tran.transform_point(pose_vector_ori)
+        tip_vector["score"] = score
+        tip_vector["points"] = pose_tran.transform_point(pose_vector_ori)
         tips_vectors.append(tip_vector)
     return tips_vectors
 
 
-def draw_workspace(size, frame="task", color = [0.5, 0.5, 0.5], pose = None):
+def draw_workspace(size, frame="task", color=[0.5, 0.5, 0.5], pose=None):
     scale = size * 0.01
-    if pose == None: pose = Transform.identity()
+    if pose == None:
+        pose = Transform.identity()
     scale = [scale, 0.0, 0.0]
     color = color
     msg = _create_marker_msg(Marker.LINE_LIST, frame, pose, scale, color)
@@ -94,7 +95,7 @@ def draw_workspace(size, frame="task", color = [0.5, 0.5, 0.5], pose = None):
     return msg
 
 
-def draw_grid(vol, grid_size, threshold=0.01, frame_id = 'task'):
+def draw_grid(vol, grid_size, threshold=0.01, frame_id="task"):
     msg = _create_vol_msg(vol, grid_size, threshold, frame_id)
     msg.header.frame_id = frame_id
     pubs["grid"].publish(msg)
@@ -111,7 +112,7 @@ def draw_quality(vol, voxel_size, threshold=0.01, frame="task"):
 
 
 def draw_volume(vol, voxel_size, threshold=0.01):
-    msg = _create_vol_msg(vol, voxel_size, threshold)
+    msg = _create_vol_msg(vol, voxel_size, threshold, frame="task")
     pubs["debug"].publish(msg)
 
 
@@ -144,9 +145,7 @@ def draw_grasp(grasp, score, finger_depth):
     markers.append(msg)
 
     # palm
-    pose = grasp.pose * Transform(
-        Rotation.from_rotvec(np.pi / 2 * np.r_[1.0, 0.0, 0.0]), [0.0, 0.0, 0.0]
-    )
+    pose = grasp.pose * Transform(Rotation.from_rotvec(np.pi / 2 * np.r_[1.0, 0.0, 0.0]), [0.0, 0.0, 0.0])
     scale = [radius, radius, w]
     msg = _create_marker_msg(Marker.CYLINDER, "task", pose, scale, color)
     msg.id = 3
@@ -189,12 +188,14 @@ def clear():
     pubs["debug"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame="task"))
     clear_vectors()
 
+
 def clear_quality():
     pubs["quality"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame="task"))
 
 
 def clear_grasps():
     pubs["grasps"].publish(DELETE_MARKER_ARRAY_MSG)
+
 
 def clear_vectors():
     pubs["vectors"].publish(DELETE_MARKER_ARRAY_MSG)
@@ -248,11 +249,12 @@ def _create_vector_marker_msg(vector, frame, opacity=False):
     length, width, height = 0.002, 0.004, 0.002
     # scale.x: shaft diameter; scale.y: head diameter; If scale.z: head length.
     scale = [length, width, height]
-    color = cmap(vector['score'])
-    if opacity: color = (color[0], color[1], color[2], vector['score']) 
+    color = cmap(vector["score"])
+    if opacity:
+        color = (color[0], color[1], color[2], vector["score"])
     pose = Transform.identity()
     msg = _create_marker_msg(Marker.ARROW, frame, pose, scale, color)
-    msg.points = [utils_rosmsg.to_point_msg(point) for point in vector['points']]
+    msg.points = [utils_rosmsg.to_point_msg(point) for point in vector["points"]]
     return msg
 
 

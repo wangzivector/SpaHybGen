@@ -175,7 +175,7 @@ class SensorServer:
         intrinsics = CameraIntrinsic(width, height, fx, fy, cx, cy)
         return intrinsics
 
-    def convert_extrinsics(self, cam2world_k: Union[list, np.ndarray]) -> np.ndarray:
+    def convert_extrinsics(self, cam2world_k: Union[list, np.ndarray]) -> Union[list, np.ndarray]:
         """convert extrinsics from [x, y, z, roll, pitch, yaw] to 4x4 transformation matrix
 
         Args:

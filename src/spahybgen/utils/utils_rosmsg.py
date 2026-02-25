@@ -1,19 +1,23 @@
 # Inherent from [VGN](https://github.com/ethz-asl/vgn)
 
+from typing import Optional, Union, List
 import math
 import geometry_msgs.msg
 import numpy as np
 import rospy
 from sensor_msgs.msg import PointCloud2, PointField
 import std_msgs.msg
+from scipy.spatial.transform import Rotation
 
-from spahybgen.utils.utils_trans_np import Rotation, Transform
-
+from spahybgen.utils.utils_trans_np import Transform
 from geometry_msgs.msg import TransformStamped, PoseStamped
 
 
-def converToTransMsg(father_frame, child_frame, translation, rotation):
-    trans_msg = TransformStamped() 
+def converToTransMsg(
+    father_frame: str, child_frame: str, translation: list, rotation: list
+) -> TransformStamped:
+    """Convert translation and rotation to a TransformStamped message"""
+    trans_msg = TransformStamped()
     trans_msg.header.frame_id = father_frame
     trans_msg.child_frame_id = child_frame
     trans_msg.header.stamp = rospy.Time.now()
@@ -31,7 +35,8 @@ def converToTransMsg(father_frame, child_frame, translation, rotation):
     trans_msg.transform.rotation.w = q[3]
     return trans_msg
 
-def to_point_msg(position):
+
+def to_point_msg(position: Union[list, np.ndarray]):
     """Convert numpy array to a Point message."""
     msg = geometry_msgs.msg.Point()
     msg.x = position[0]
@@ -40,12 +45,12 @@ def to_point_msg(position):
     return msg
 
 
-def from_point_msg(msg):
+def from_point_msg(msg) -> np.ndarray:
     """Convert a Point message to a numpy array."""
     return np.r_[msg.x, msg.y, msg.z]
 
 
-def to_vector3_msg(vector3):
+def to_vector3_msg(vector3: Union[list, np.ndarray]):
     """Convert numpy array to a Vector3 message."""
     msg = geometry_msgs.msg.Vector3()
     msg.x = vector3[0]
@@ -54,12 +59,12 @@ def to_vector3_msg(vector3):
     return msg
 
 
-def from_vector3_msg(msg):
+def from_vector3_msg(msg) -> np.ndarray:
     """Convert a Vector3 message to a numpy array."""
     return np.r_[msg.x, msg.y, msg.z]
 
 
-def to_quat_msg(orientation):
+def to_quat_msg(orientation: Rotation):
     """Convert a `Rotation` object to a Quaternion message."""
     quat = orientation.as_quat()
     msg = geometry_msgs.msg.Quaternion()
@@ -70,12 +75,12 @@ def to_quat_msg(orientation):
     return msg
 
 
-def from_quat_msg(msg):
+def from_quat_msg(msg) -> Rotation:
     """Convert a Quaternion message to a Rotation object."""
     return Rotation.from_quat([msg.x, msg.y, msg.z, msg.w])
 
 
-def to_pose_msg(transform):
+def to_pose_msg(transform: Transform):
     """Convert a `Transform` object to a Pose message."""
     msg = geometry_msgs.msg.Pose()
     msg.position = to_point_msg(transform.translation)
@@ -83,7 +88,7 @@ def to_pose_msg(transform):
     return msg
 
 
-def to_transform_msg(transform):
+def to_transform_msg(transform: Transform):
     """Convert a `Transform` object to a Transform message."""
     msg = geometry_msgs.msg.Transform()
     msg.translation = to_vector3_msg(transform.translation)
@@ -91,14 +96,14 @@ def to_transform_msg(transform):
     return msg
 
 
-def from_transform_msg(msg):
+def from_transform_msg(msg) -> Transform:
     """Convert a Transform message to a Transform object."""
     translation = from_vector3_msg(msg.translation)
     rotation = from_quat_msg(msg.rotation)
     return Transform(rotation, translation)
 
 
-def to_color_msg(color):
+def to_color_msg(color: Union[list, np.ndarray]):
     """Convert a numpy array to a ColorRGBA message."""
     msg = std_msgs.msg.ColorRGBA()
     msg.r = color[0]
@@ -108,7 +113,12 @@ def to_color_msg(color):
     return msg
 
 
-def to_cloud_msg(points, intensities=None, frame=None, stamp=None):
+def to_cloud_msg(
+    points: np.ndarray,
+    intensities: Optional[np.ndarray] = None,
+    frame: Optional[str] = None,
+    stamp: Optional[rospy.Time] = None,
+):
     """Convert list of unstructured points to a PointCloud2 message.
 
     Args:
@@ -140,6 +150,6 @@ def to_cloud_msg(points, intensities=None, frame=None, stamp=None):
         data = np.hstack([points, intensities])
 
     msg.row_step = msg.point_step * points.shape[0]
-    msg.data = data.astype(np.float32).tostring()
+    msg.data = data.astype(np.float32).tobytes()
 
     return msg
