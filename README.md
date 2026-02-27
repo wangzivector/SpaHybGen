@@ -21,7 +21,7 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 <br>✅ Replaced absolute path and magic number.
 <br>✅ Polished contact assignment script.
 <br>✅ Broke down functions and formated for clarity.
-<br>✅ Add functional documentation and type hints.
+<br>✅ Added functional documentation and type hints.
 - [ ] More in-script modular test [before 1st March 2026]
 - [ ] **Task-oriented objectives and manipulation hand primitives** [before April 2026]
 

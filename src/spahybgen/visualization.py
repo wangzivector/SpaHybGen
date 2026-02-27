@@ -3,6 +3,7 @@ import spahybgen.utils.utils_rosvis as ut_vis
 import spahybgen.inference as Inference
 import numpy as np
 import rospy
+from spahybgen.utils.utils_trans_np import Transform
 
 
 def visualize_grid(
@@ -11,7 +12,7 @@ def visualize_grid(
     grid_length: float = 0.4,
     voxel_disc: int = 80,
     threshold: float = 0.1,
-    pose: Optional[np.ndarray] = None,
+    pose: Optional[Transform] = None,
 ) -> None:
     """Visualize the input grid volume in RViz, with the quality values above the threshold
     Args:

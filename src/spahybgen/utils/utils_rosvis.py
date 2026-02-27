@@ -10,7 +10,9 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from spahybgen.utils import utils_rosmsg
 from spahybgen.utils.utils_trans_np import Transform, Rotation
-from spahybgen.grasptip import index_str2nums
+from spahybgen.grasptip import index_str2nums, Grasp_neat
+import pandas as pd
+from typing import List, Union, Optional
 
 
 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("RedGreen", ["r", "g"])
@@ -18,7 +20,16 @@ DELETE_MARKER_MSG = Marker(action=Marker.DELETEALL)
 DELETE_MARKER_ARRAY_MSG = MarkerArray(markers=[DELETE_MARKER_MSG])
 
 
-def workspace_lines(size):
+def workspace_lines(size: float) -> List[List[float]]:
+    """
+    Create a box in the origin of Rviz world
+
+    Args:
+        size: size of cubic box
+
+    Returns:
+        out: list of box corners
+    """
     return [
         [0.0, 0.0, 0.0],
         [size, 0.0, 0.0],
@@ -47,7 +58,17 @@ def workspace_lines(size):
     ]
 
 
-def visualize_vectors_in_df(df_vectors, voxel_size):
+def visualize_vectors_in_df(df_vectors: pd.DataFrame, voxel_size: float) -> List[dict]:
+    """
+    Visualize contact features as vectors
+
+    Args:
+        df_vectors: dataframe of contact features
+        voxel_size: size length of one grid voxel
+
+    Returns:
+        out: list of constructed vector for rviz vectors
+    """
     tips_vectors = []
     for label in df_vectors.index:
         indexs_uvw = index_str2nums(label)
@@ -65,7 +86,21 @@ def visualize_vectors_in_df(df_vectors, voxel_size):
     return tips_vectors
 
 
-def visualize_vectors_in_array(array_tips, array_scores, voxel_size, is_list=False):
+def visualize_vectors_in_array(
+    array_tips: list, array_scores: Union[list, np.ndarray], voxel_size: float, is_list: bool = False
+) -> List[dict]:
+    """
+    Visualize contact features as vectors
+
+    Args:
+        array_tips: ndarray of contact features, poses
+        array_scores: scores of contacts for color mapping
+        voxel_size: size length of one grid voxel
+        is_list: where the pose data is list or Transform
+
+    Returns:
+        out: list of constructed vector for rviz vectors
+    """
     tips_vectors = []
     pose_vector_ori = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.01]])  # visualize z-axis
     for ind, (pose, score) in enumerate(zip(array_tips, array_scores)):
@@ -83,7 +118,21 @@ def visualize_vectors_in_array(array_tips, array_scores, voxel_size, is_list=Fal
     return tips_vectors
 
 
-def draw_workspace(size, frame="task", color=[0.5, 0.5, 0.5], pose=None):
+def draw_workspace(
+    size: float, frame: str = "task", color: list = [0.5, 0.5, 0.5], pose: Optional[Transform] = None
+) -> Marker:
+    """
+    Draw the cubic workspace in Rviz
+
+    Args:
+        size: size of the box
+        frame: frame id of box. Defaults to "task".
+        color: color of box. Defaults to [0.5, 0.5, 0.5].
+        pose: pose of box. Defaults to None.
+
+    Returns:
+        Marker of lines to indicate box vertices
+    """
     scale = size * 0.01
     if pose == None:
         pose = Transform.identity()
@@ -95,28 +144,69 @@ def draw_workspace(size, frame="task", color=[0.5, 0.5, 0.5], pose=None):
     return msg
 
 
-def draw_grid(vol, grid_size, threshold=0.01, frame_id="task"):
+def draw_grid(vol: np.ndarray, grid_size: float, threshold: float = 0.01, frame_id: str = "task") -> None:
+    """
+    Draw volume grid to Rviz
+
+    Args:
+        vol: volume data in ndarray
+        grid_size: length of the voxel size
+        threshold: threshold to filter low quanlity voxels. Defaults to 0.01
+        frame_id: frame id of the volume. Defaults to "task"
+    """
     msg = _create_vol_msg(vol, grid_size, threshold, frame_id)
     msg.header.frame_id = frame_id
     pubs["grid"].publish(msg)
 
 
-def draw_points(points, frame="task"):
+def draw_points(points: np.ndarray, frame: str = "task") -> None:
+    """
+    Cast points to Rviz
+
+    Args:
+        points: points to cast in ndarray
+        frame: frame id of visualization. Defaults to "task".
+    """
     msg = utils_rosmsg.to_cloud_msg(points, frame=frame)
     pubs["points"].publish(msg)
 
 
-def draw_quality(vol, voxel_size, threshold=0.01, frame="task"):
+def draw_quality(vol: np.ndarray, voxel_size: float, threshold: float = 0.01, frame: str = "task") -> None:
+    """
+    Draw color-annotated volume in Rviz
+
+    Args:
+        vol: volume data
+        voxel_size: length of voxel size
+        threshold: threshold to filter low quanlity voxels. Defaults to 0.01
+        frame_id: frame id of the volume. Defaults to "task"
+    """
     msg = _create_vol_msg(vol, voxel_size, threshold, frame)
     pubs["quality"].publish(msg)
 
 
-def draw_volume(vol, voxel_size, threshold=0.01):
+def draw_volume(vol: np.ndarray, voxel_size: float, threshold: float = 0.01) -> None:
+    """
+    Draw volume in Rviz, for debug only
+
+    Args:
+        vol: volume data
+        voxel_size: length of voxel size
+        threshold: threshold to filter low quanlity voxels. Defaults to 0.01
+    """
     msg = _create_vol_msg(vol, voxel_size, threshold, frame="task")
     pubs["debug"].publish(msg)
 
 
-def draw_grasp(grasp, score, finger_depth):
+def draw_grasp(grasp: Grasp_neat, score: float, finger_depth: float) -> None:
+    """
+    Draw grasp pose in Rviz
+
+    Args:
+        grasp: grasp data
+        score: score of the grasp
+        finger_depth: finger length
+    """
     radius = 0.1 * finger_depth
     w, d = grasp.width, finger_depth
     color = cmap(float(score))
@@ -154,7 +244,13 @@ def draw_grasp(grasp, score, finger_depth):
     pubs["grasp"].publish(MarkerArray(markers=markers))
 
 
-def draw_grasps(grasps):
+def draw_grasps(grasps: List[Grasp_neat]) -> None:
+    """
+    Draw multiple grasp poses in Rviz
+
+    Args:
+        grasps: list of grasps
+    """
     markers = []
     for i in range(len(grasps)):
         msg = _create_grasp_marker_msg(grasps[i])
@@ -164,7 +260,15 @@ def draw_grasps(grasps):
     pubs["grasps"].publish(msg)
 
 
-def draw_vectors(vectors, frame="task", opacity=False):
+def draw_vectors(vectors: list, frame: str = "task", opacity: bool = False) -> None:
+    """
+    Draw contact poses in Rviz
+
+    Args:
+        vectors: contact poses in list
+        frame: frame id. Defaults to "task".
+        opacity: whether annotate transparency with contact scores. Defaults to False.
+    """
     markers = []
     for i in range(len(vectors)):
         msg = _create_vector_marker_msg(vectors[i], frame=frame, opacity=opacity)
@@ -174,11 +278,18 @@ def draw_vectors(vectors, frame="task", opacity=False):
     pubs["vectors"].publish(msg)
 
 
-def clear_grid(frame="task"):
+def clear_grid(frame: str = "task") -> None:
+    """
+    Clear visualize grid in the Rviz
+
+    Args:
+        frame: frame_id. Defaults to "task".
+    """
     pubs["grid"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame=frame))
 
 
-def clear():
+def clear() -> None:
+    """Clear all visualized data in Rviz"""
     pubs["workspace"].publish(DELETE_MARKER_MSG)
     pubs["grid"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame="task"))
     pubs["points"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame="task"))
@@ -189,19 +300,23 @@ def clear():
     clear_vectors()
 
 
-def clear_quality():
+def clear_quality() -> None:
+    """Clear volume"""
     pubs["quality"].publish(utils_rosmsg.to_cloud_msg(np.array([]), frame="task"))
 
 
-def clear_grasps():
+def clear_grasps() -> None:
+    """Clear grasp"""
     pubs["grasps"].publish(DELETE_MARKER_ARRAY_MSG)
 
 
-def clear_vectors():
+def clear_vectors() -> None:
+    """Clear vector of contact poses"""
     pubs["vectors"].publish(DELETE_MARKER_ARRAY_MSG)
 
 
-def _create_publishers():
+def _create_publishers() -> dict:
+    """Initialize visualizing topics in Rviz"""
     pubs = dict()
     pubs["workspace"] = Publisher("/workspace", Marker, queue_size=1, latch=True)
     pubs["grid"] = Publisher("/grid", PointCloud2, queue_size=1, latch=True)
@@ -214,7 +329,22 @@ def _create_publishers():
     return pubs
 
 
-def _create_marker_msg(marker_type, frame, pose, scale, color):
+def _create_marker_msg(
+    marker_type: int, frame: str, pose: Transform, scale: list, color: Union[tuple, list, np.ndarray]
+) -> Marker:
+    """
+    Create a general Marker type msg
+
+    Args:
+        marker_type: Marker type
+        frame: frame_id
+        pose: pose of feature in Transform
+        scale: scale parameter of Marker
+        color: color info
+
+    Returns:
+        Marker msg
+    """
     msg = Marker()
     msg.header.frame_id = frame
     msg.header.stamp = rospy.Time()
@@ -226,7 +356,19 @@ def _create_marker_msg(marker_type, frame, pose, scale, color):
     return msg
 
 
-def _create_vol_msg(vol, voxel_size, threshold, frame):
+def _create_vol_msg(vol: np.ndarray, voxel_size: float, threshold: float, frame: str) -> PointCloud2:
+    """
+    Create volume msg using PointCloud2
+
+    Args:
+        vol: volume data to visualize
+        voxel_size: length of voxel
+        threshold: threshold to filter low-quality data
+        frame: frame_id
+
+    Returns:
+        PointCloud2 msg
+    """
     vol = vol.squeeze()
     points = np.argwhere(vol > threshold) * voxel_size
     rospy.logdebug("Grid visual points number with threshold {}: {}".format(threshold, points.shape[0]))
@@ -234,7 +376,16 @@ def _create_vol_msg(vol, voxel_size, threshold, frame):
     return utils_rosmsg.to_cloud_msg(points, values, frame)
 
 
-def _create_grasp_marker_msg(grasp):
+def _create_grasp_marker_msg(grasp: Grasp_neat) -> Marker:
+    """
+    Instantialize grasp data to Marker for visualization
+
+    Args:
+        grasp: grasp data in list of Grasp_neat
+
+    Returns:
+        Marker msg
+    """
     finger_depth = grasp.depth + grasp.finger_base_depth
     radius = 0.1 * finger_depth
     w, d = grasp.width, finger_depth
@@ -245,7 +396,18 @@ def _create_grasp_marker_msg(grasp):
     return msg
 
 
-def _create_vector_marker_msg(vector, frame, opacity=False):
+def _create_vector_marker_msg(vector: dict, frame: str, opacity: bool = False) -> Marker:
+    """
+    Instantialize vector (contacts) to Marker
+
+    Args:
+        vector: vector data (contact)
+        frame: frame_id in Rviz
+        opacity: Whether map quality of vectors to set opacity. Defaults to False.
+
+    Returns:
+        list of Markers
+    """
     length, width, height = 0.002, 0.004, 0.002
     # scale.x: shaft diameter; scale.y: head diameter; If scale.z: head length.
     scale = [length, width, height]
@@ -258,7 +420,17 @@ def _create_vector_marker_msg(vector, frame, opacity=False):
     return msg
 
 
-def _gripper_lines(width, depth):
+def _gripper_lines(width: float, depth: float) -> list:
+    """
+    Lines for drawing a gripper frame
+
+    Args:
+        width: width of grasp
+        depth: depth of grasp
+
+    Returns:
+        list of lines for drawing grasps
+    """
     return [
         [0.0, 0.0, -depth / 2.0],
         [0.0, 0.0, 0.0],

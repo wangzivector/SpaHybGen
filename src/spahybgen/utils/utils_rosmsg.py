@@ -103,7 +103,7 @@ def from_transform_msg(msg) -> Transform:
     return Transform(rotation, translation)
 
 
-def to_color_msg(color: Union[list, np.ndarray]):
+def to_color_msg(color: Union[tuple, list, np.ndarray]):
     """Convert a numpy array to a ColorRGBA message."""
     msg = std_msgs.msg.ColorRGBA()
     msg.r = color[0]
@@ -119,7 +119,8 @@ def to_cloud_msg(
     frame: Optional[str] = None,
     stamp: Optional[rospy.Time] = None,
 ):
-    """Convert list of unstructured points to a PointCloud2 message.
+    """
+    Convert list of unstructured points to a PointCloud2 message.
 
     Args:
         points: Point coordinates as array of shape (N,3).
