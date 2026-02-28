@@ -22,7 +22,7 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 <br>✅ Polished contact assignment script.
 <br>✅ Broke down functions and formated for clarity.
 <br>✅ Added functional documentation and type hints.
-<br>✅ More pytest-based modular test [ongoing]
+<br>✅ More pytest-based modular test [ongoing, see `Code Test` section below]
 - [ ] **Task-oriented objectives and manipulation hand primitives** [before April 2026]
 
 
@@ -51,6 +51,14 @@ pip install -e .
 
 > We understand that the setup of conda for GPU-based python packages can be tricky in varied machine and the above instruction may be insufficient for an error-free installation. Thus, we further share the specification of our installed env. in [environment.yml](assets/environment.yml) for reference.
 
+
+## Code Test
+To validate the code and environment, it is recommanded to run modular tests:
+```bash
+pip install pytest
+cd spahybgen
+pytest tests/ -v
+```
 
 ## Contact Dataset Generation
 <div align="center">
