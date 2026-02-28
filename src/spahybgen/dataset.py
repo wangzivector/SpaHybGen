@@ -175,10 +175,12 @@ class Dataset(torch.utils.data.Dataset):
             df_contact_index: The index of full contact data
             scores_contact: The scores of full contact data
             rotations_contact: The rotations of the contact data
+
         Returns:
-            indexs_contact_com: The indexs of the contact data to be used for training
-            scores_contact_com: The scores of the contact data to be used for training
-            rotations_contact_com: The rotations of the contact data to be used for training
+            out:
+            - indexs_contact_com: The indexs of the contact data to be used for training
+            - scores_contact_com: The scores of the contact data to be used for training
+            - rotations_contact_com: The rotations of the contact data to be used for training
         """
         indexs_contact = GraspType.index_str2nums(df_contact_index, is_array=True).astype(np.uint16)
         num_focal_contact = int(self.numsample * focal_ratio_contact)
@@ -265,9 +267,11 @@ class Dataset(torch.utils.data.Dataset):
             scene_data: The input grid data of the scene
             df_wrench_index: The index of full wrench data
             scores_wrench: The scores of full wrench data
-            Returns:
-            indexs_wrench_com: The indexs of the wrench data to be used for training
-            scores_wrench_com: The scores of the wrench data to be used for training
+
+        Returns:
+            out:
+            - indexs_wrench_com: The indexs of the wrench data to be used for training
+            - scores_wrench_com: The scores of the wrench data to be used for training
         """
 
         indexs_wrench = GraspType.index_str2nums(df_wrench_index, is_array=True).astype(np.uint16)
@@ -316,7 +320,7 @@ class Dataset(torch.utils.data.Dataset):
         return torch.from_numpy(data.astype(np.float32))
 
     @staticmethod
-    def collate_fn_concatenate(batch):
+    def collate_fn_concatenate(batch) -> list:
         """Collate function for concatenating the data in the batch for Indexed data type
         The output will be a concatenated list of contact/wrench points with their scores and rotations,
         and the corresponding indexs in the original grid. The input is a list of tuples, each tuple is
@@ -380,20 +384,22 @@ class Dataset(torch.utils.data.Dataset):
         return [input, target]
 
 
-def create_train_val_loaders(root, batch_size: int, val_split: float, data_type: str, kwargs):
-    """TEST CODE used below
-    Create the train and validation dataloaders for the dataset
+def create_train_val_loaders(
+    root, batch_size: int, val_split: float, data_type: str, kwargs
+) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
+    """Create the train and validation dataloaders for the dataset
 
     Args:
         root: The root directory of the dataset
         batch_size: The batch size for the dataloaders
         val_split: The ratio of the validation set size to the whole dataset size
-        data_type: The type of the output data. Can be "Indexed" or "Full
+        data_type: The type of the output data. Can be "Indexed" or "Full"
         kwargs: Additional keyword arguments for the dataloaders, such as num_workers and pin_memory
 
     Returns:
-        train_loader: The dataloader for the training set
-        val_loader: The dataloader for the validation set
+        out:
+        - train_loader: the dataloader for the training set
+        - val_loader: the dataloader for the validation set
     """
 
     # load the dataset

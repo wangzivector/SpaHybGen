@@ -31,7 +31,7 @@ class HandModel:
         hand_approaching_matrix: Union[list, np.ndarray] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         hand_position_offset: float = 0.10,
         initial_joints: Optional[np.ndarray] = None,
-    ):
+    ) -> None:
         """Differential hand model for optimization, including the kinematics and geometry of the hand,
         and the contact point information for grasping
 
@@ -147,7 +147,7 @@ class HandModel:
         else:
             self.initial_joints = self.joints_q_lower
 
-    def assign_contact_candidates(self, link, rotation, translation):
+    def assign_contact_candidates(self, link, rotation, translation) -> None:
         """Assign contact point candidates for a given link,
         and compute the contact point basis and normals in the world frame.
 
@@ -182,7 +182,7 @@ class HandModel:
                 self.contact_normals[cpb_part_name].unsqueeze(0).repeat(batch_size, 1, 1)
             )
 
-    def inital_joint_limits(self):
+    def inital_joint_limits(self) -> None:
         """Initialize the joint limits of the hand model, and compute the mid and variance"""
         self.joints = []
         for i in range(len(self.robot_full.joints)):
@@ -334,8 +334,9 @@ class HandModel:
             q: The input joint configuration, in shape of (Batch, actuate_dofs)
 
         Returns:
-            surface_points: The surface points of the hand model in the world frame
-            surface_normals: The surface normals of the hand model in the world frame
+            out:
+            - surface_points: The surface points of the hand model in the world frame
+            - surface_normals: The surface normals of the hand model in the world frame
         """
         if q is not None:
             self.update_kinematics(q=q)
@@ -447,8 +448,9 @@ class HandModel:
             smooth: The method for normalizing the weights, should be "softmax" or "normalize"
 
         Returns:
-            contact_points: The contact points of the hand model in the world frame, in shape of (Batch, num_contact_points, 3)
-            contact_normals: The contact normals of the hand model in the world frame, in shape of (Batch, num_contact_points, 3)
+            out:
+            - contact_points: The contact points of the hand model in the world frame, in shape of (Batch, num_contact_points, 3)
+            - contact_normals: The contact normals of the hand model in the world frame, in shape of (Batch, num_contact_points, 3)
         """
         if contact_point_part_indices is None:
             contact_point_part_indices = torch.arange(
@@ -527,8 +529,9 @@ class HandModel:
             q: The input joint configuration, in shape of (Batch, actuate_dofs)
 
         Returns:
-            contact_points: The sampled contact points of the hand model in the world frame, shape (Batch, num_points, 3)
-            contact_normals: The sampled contact normals of the hand model in the world frame, shape (Batch, num_points, 3)
+            out:
+            - contact_points: The sampled contact points of the hand model in the world frame, shape (Batch, num_points, 3)
+            - contact_normals: The sampled contact normals of the hand model in the world frame, shape (Batch, num_points, 3)
         """
         if q is not None:
             self.update_kinematics(q)

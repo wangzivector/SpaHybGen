@@ -11,6 +11,15 @@ class Grasp_neat(object):
     """Grasp parameterized as pose of a 2-finger robot hand."""
 
     def __init__(self, pose: Transform, width: float, score: float, depth: float, finger_base_depth: float):
+        """Init function
+
+        Args:
+            pose: Transform of grasp
+            width: opening width
+            score: grasp score
+            depth: grasp depth
+            finger_base_depth: finger base depth from hand base to depth origin
+        """
         self.pose = pose
         self.width = width
         self.score = score
@@ -92,8 +101,9 @@ def Graspnets2Grasps(grasp_group: GraspGroup, camera_pose: np.ndarray, scene_id:
         scene_id: The scene id, used for dataframe output
         ann_id: The annotation id, used for dataframe output
     Returns:
-        grasp_group_vis: The output grasp group in VGN format, used for visualization
-        df_grasps: The output grasp group in dataframe format, used for training
+        out:
+        - grasp_group_vis: The output grasp group in VGN format, used for visualization
+        - df_grasps: The output grasp group in dataframe format, used for training
     """
     grasp_group = grasp_group.transform(camera_pose)
     grasp_group_vis = Graspnet2Grasp(grasp_group, finger_base_depth=0.02)
@@ -136,12 +146,12 @@ def Grasp2Tips(df_raw_grasps: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         df_raw_grasps: The input grasp group in dataframe format, should contain the columns of
-        'x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'width', 'depth', 'finger_base_depth', and 'score'
+            'x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'width', 'depth', 'finger_base_depth', and 'score'
 
     Returns:
         tips_data: The output tips data in dataframe format, should contain the columns of
-        'x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'width', 'depth', 'finger_base_depth', 'score',
-        'lsx', 'lsy', 'lsz', 'lex', 'ley', 'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
+            'x', 'y', 'z', 'qx', 'qy', 'qz', 'qw', 'width', 'depth', 'finger_base_depth', 'score',
+            'lsx', 'lsy', 'lsz', 'lex', 'ley', 'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
     """
     tips_data = df_raw_grasps.loc[:, ["x", "y", "z", "qx", "qy", "qz", "qw", "score"]]
     grasp_size = df_raw_grasps.index.size
@@ -193,14 +203,17 @@ def Tips2TipsDF(
 
     Args:
         tips_data: The input tips data in dataframe format, should contain the columns of
-        'x', 'y', 'z', 'qx', 'qy', 'qz',
-        'qw', 'score', 'lsx', 'lsy', 'lsz', 'lex', 'ley',
-        'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
+            'x', 'y', 'z', 'qx', 'qy', 'qz',
+            'qw', 'score', 'lsx', 'lsy', 'lsz', 'lex', 'ley',
+            'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
         volume_size: The size of the volume in meters (assumed to be a cube)
         grid_size: The number of voxels in each dimension (assumed to be a cube)
         interp_ratios: The interpolation ratios for the start and end of each tip
         scene_grid: The scene grid (if None, it is generated from volume_size and grid_size)
         grid_type: The type of grid (if None, it is generated from volume_size and grid_size)
+
+    Returns:
+        Dataframe of Tips
     """
     voxel_size = volume_size / grid_size
     left_start, left_end = (
@@ -315,11 +328,14 @@ def Tips2WrensDF(
 
     Args:
         tips_data: The input tips data in dataframe format, should contain the columns of
-        'x', 'y', 'z', 'qx', 'qy', 'qz','qw', 'score', 'lsx', 'lsy', 'lsz', 'lex', 'ley',
-        'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
+            'x', 'y', 'z', 'qx', 'qy', 'qz','qw', 'score', 'lsx', 'lsy', 'lsz', 'lex', 'ley',
+            'lez', 'rsx', 'rsy', 'rsz', 'rex', 'rey', 'rez'
         volume_size: The size of the volume in meters
         grid_size: The number of voxels in each dimension
         interp_ratios: the start and end position of tip markers
+
+    Returns:
+        DataFrame of contact features
     """
     voxel_size = volume_size / grid_size
     left_start, left_end = (

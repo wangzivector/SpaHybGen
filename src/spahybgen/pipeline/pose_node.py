@@ -2,6 +2,7 @@
 
 from typing import Any, List, Tuple, Union
 import numpy as np
+import numpy.typing as npt
 import rospy
 import tf2_ros
 from geometry_msgs.msg import PoseStamped
@@ -40,7 +41,8 @@ class PoseNode:
         gripper_tfname_vis: str,
         upper_offset_height: float = -0.10,
     ) -> None:
-        """characterize the static transformations between the robot for grasp, and broadcast them to the TF tree
+        """
+        Characterize the static transformations between the robot for grasp, and broadcast them to the TF tree
 
         Args:
             armend2gripper: the distance from the robot arm end to the gripper base
@@ -48,7 +50,7 @@ class PoseNode:
             gripper_tfname: the name of the gripper tip frame
             gripper_tfname_vis: the name of the gripper tip frame for visualization
             upper_offset_height: the height offset for the "endpos_upper" frame relative to
-            the "object_grip_endpos" frame, which is used as the motion preparation pose for grasp execution
+                the "object_grip_endpos" frame, which is used as the motion preparation pose for grasp execution
         """
         trans_end2gri = self.PosRotToTransMsg(
             self.robot_prefix + "tool",
@@ -247,11 +249,11 @@ class PoseNode:
 
         Args:
             trans_msg: a TransformStamped message representing the transformation
-            from the father frame to the child frame
+                from the father frame to the child frame
 
         Returns:
             a list containing the translation and rotation vector (axis-angle)
-            of the child frame relative to the father frame
+                of the child frame relative to the father frame
         """
 
         translation = [
@@ -271,7 +273,15 @@ class PoseNode:
         return pos_rot
 
     @staticmethod
-    def PosRotVec2TransMat(pose_posrotvec):
+    def PosRotVec2TransMat(pose_posrotvec: Any) -> np.ndarray:
+        """Convert position-rotation vector to transformation matrix
+
+        Args:
+            pose_posrotvec: position-rotation vector
+
+        Returns:
+            transformation matrix in ndarray
+        """
         pose_rotation_SR = SR.from_rotvec(pose_posrotvec[3:])
         position_vec = np.array([pose_posrotvec[:3]]).T
         homon_vec = np.array([[0.0, 0.0, 0.0, 1.0]])

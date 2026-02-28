@@ -13,25 +13,25 @@ class CameraIntrinsic(object):
         K: The intrinsic camera matrix.
     """
 
-    def __init__(self, width, height, fx, fy, cx, cy):
+    def __init__(self, width: float, height: float, fx: float, fy: float, cx: float, cy: float) -> None:
         self.width = width
         self.height = height
         self.K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]])
 
     @property
-    def fx(self):
+    def fx(self) -> float:
         return self.K[0, 0]
 
     @property
-    def fy(self):
+    def fy(self) -> float:
         return self.K[1, 1]
 
     @property
-    def cx(self):
+    def cx(self) -> float:
         return self.K[0, 2]
 
     @property
-    def cy(self):
+    def cy(self) -> float:
         return self.K[1, 2]
 
     def to_dict(self):
@@ -44,8 +44,12 @@ class CameraIntrinsic(object):
         return data
 
     @classmethod
-    def from_dict(cls, data):
-        """Deserialize intrinisic parameters from a dict object."""
+    def from_dict(cls, data: dict):
+        """Deserialize intrinisic parameters from a dict object.
+
+        Args:
+            data: dict containing intrinsic parameters: width, height, K[array]
+        """
         intrinsic = cls(
             width=data["width"],
             height=data["height"],

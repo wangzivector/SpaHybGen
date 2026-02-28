@@ -27,7 +27,7 @@ class SpactialOptimization:
         voxel_num: int = 80,
         npts_hand_pnt: int = 128,
         normalize_scale: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the SpactialOptimization class.
 
@@ -391,7 +391,7 @@ class SpactialOptimization:
 
         Returns:
             torch.Tensor: A tensor of shape [batch, npts_hand_surface_points, repeat_num, 3]
-            containing the repeated hand model surface points for each batch.
+                containing the repeated hand model surface points for each batch.
         """
         hand_surface_points = self.handmodel.get_surface_points(
             downsample_size=self.npts_hand_surface_points
@@ -417,8 +417,8 @@ class SpactialOptimization:
 
         Returns:
             tuple: A tuple containing:
-                - batch_contact_points (torch.Tensor): Tensor of shape [batch, cp, repeat_num, 3]
-                - batch_contact_normals (torch.Tensor): Tensor of shape [batch, cp, repeat_num, 3]
+            - batch_contact_points (torch.Tensor): Tensor of shape [batch, cp, repeat_num, 3]
+            - batch_contact_normals (torch.Tensor): Tensor of shape [batch, cp, repeat_num, 3]
         """
         (
             contact_points,
@@ -852,7 +852,7 @@ class SpactialOptimization:
         color: str = "rgb(100, 0, 100)",
         opacity: float = 1.0,
         text: Optional[str] = None,
-    ):
+    ) -> list:
         """
         Get the current hand model's plotly data for visualization.
 
@@ -880,7 +880,7 @@ class MeanScaleNormalizer:
         eps (float, optional): Small value to avoid division by zero. Default is 1e-8.
     """
 
-    def __init__(self, momentum: float = 0.5, eps: float = 1e-8):
+    def __init__(self, momentum: float = 0.5, eps: float = 1e-8) -> None:
         self.m = momentum
         self.eps = eps
         self.mean = None

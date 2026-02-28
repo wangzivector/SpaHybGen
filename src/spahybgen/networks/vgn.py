@@ -124,7 +124,7 @@ class VGN(nn.Module):
     Args:
         voxel_discreteness: discretization of the output voxel grid
         orientation: representation of the output orientation, can be "quat", "so3" or "R6d"
-            augment: whether to use data augmentation, which will increase the number of filters in the network
+        augment: whether to use data augmentation, which will increase the number of filters in the network
     Returns:
         nn module of the VGN network
     """

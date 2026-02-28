@@ -11,12 +11,12 @@ class Conv3DBlock(nn.Module):
     """
     The basic block for double 3x3x3 convolutions in the analysis path
     -- __init__()
-    :param in_channels -> number of input channels
-    :param out_channels -> desired number of output channels
-    :param bottleneck -> specifies the bottlneck block
+    - param in_channels -> number of input channels
+    -  out_channels -> desired number of output channels
+    -  bottleneck -> specifies the bottlneck block
     -- forward()
-    :param input -> input Tensor to be convolved
-    :return -> Tuple[Tensor, Tensor]
+    -  input -> input Tensor to be convolved
+    - return -> Tuple[Tensor, Tensor]
     """
 
     def __init__(self, in_channels: int, out_channels: int, bottleneck=False) -> None:
@@ -49,10 +49,10 @@ class UpConv3DBlock(nn.Module):
     """
     The basic block for upsampling followed by double 3x3x3 convolutions in the synthesis path
     -- __init__()
-    :param in_channels -> number of input channels
-    :param out_channels -> number of residual connections' channels to be concatenated
-    :param last_layer -> specifies the last output layer
-    :param num_classes -> specifies the number of output channels for dispirate classes
+    -  in_channels -> number of input channels
+    -  out_channels -> number of residual connections' channels to be concatenated
+    -  last_layer -> specifies the last output layer
+    -  num_classes -> specifies the number of output channels for dispirate classes
     """
 
     def __init__(
@@ -92,9 +92,9 @@ class UpConv3DBlock(nn.Module):
     def forward(self, input: Tensor, residual: Optional[Tensor] = None) -> Tensor:
         """
         network forward feed
-        :param input -> input Tensor
-        :param residual -> residual connection to be concatenated with input
-        :return -> Tensor
+        - param input -> input Tensor
+        - param residual -> residual connection to be concatenated with input
+        - return -> Tensor
         """
         out = self.upconv1(input)
         if residual is not None:
@@ -110,11 +110,11 @@ class UNet3D(nn.Module):
     """
     The 3D UNet model
     -- __init__()
-    :param in_channels -> number of input channels
-    :param augment -> whether double the hinder layer nodes
-    :voxel_discreteness -> input dimension, not used
-    :param level_channels -> the number of channels at each level (count top-down)
-    :param bottleneck_channel -> the number of bottleneck channels
+    - param in_channels -> number of input channels
+    - param augment -> whether double the hinder layer nodes
+    - voxel_discreteness -> input dimension, not used
+    - param level_channels -> the number of channels at each level (count top-down)
+    - param bottleneck_channel -> the number of bottleneck channels
     """
 
     def __init__(
@@ -190,8 +190,8 @@ class UNet3D(nn.Module):
     def forward(self, input: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         """
         network forward feed
-        :param input -> input Tensor
-        :return -> Tuple[Tensor, Tensor, Tensor]
+        - input -> input Tensor
+        - return -> Tuple[Tensor, Tensor, Tensor]
         """
         # Analysis path forward feed
         out, residual_level1 = self.a_block1(input)

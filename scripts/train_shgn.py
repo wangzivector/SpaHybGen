@@ -306,9 +306,10 @@ def prepare_batch_concatenate(batch: tuple, device: torch.device, datatype: str)
         datatype: type of data, can be "Indexed" or "Full"
 
     Returns:
-        x: input data for the network
-        y: ground truth for the network output
-        index: index for selecting the output of the network when datatype is "Indexed"
+        out:
+        - x: input data for the network
+        - y: ground truth for the network output
+        - index: index for selecting the output of the network when datatype is "Indexed"
     """
     if datatype == "Indexed":
         tsdf, (scores, rotations, wrenches), (indexs_contact, indexs_wrench) = batch
@@ -369,10 +370,11 @@ def loss_fn(
         fn_wrench: loss function for wrench prediction, can be "CEL", "MSEL"
 
     Returns:
-        loss: total loss for training or evaluation
-        loss_score: loss for score prediction
-        loss_rot: loss for rotation prediction
-        loss_wrench: loss for wrench prediction
+        out:
+        - loss: total loss for training or evaluation
+        - loss_score: loss for score prediction
+        - loss_rot: loss for rotation prediction
+        - loss_wrench: loss for wrench prediction
     """
     scores, rotations, wrenches = y
     score_pred, rotation_pred, wrench_pred = y_pred
@@ -482,7 +484,7 @@ def _quat_loss_fn(pred: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
 def _so3_loss_fn(pred: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
     """compute the loss for so3 rotation prediction
 
-     Args:
+    Args:
         pred: so3 rotation prediction from the network, with shape [batch_size, 3]
         target: ground truth for the so3 rotation, with shape [batch_size, 3]
 
@@ -527,7 +529,7 @@ def create_summary_writers(
 ) -> Tuple[SummaryWriter, SummaryWriter]:
     """create summary writers for logging training and validation results to tensorboard
 
-     Args:
+    Args:
         net: the network to be trained
         device: device for training
         log_dir: directory for logging

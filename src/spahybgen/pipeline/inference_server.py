@@ -15,14 +15,14 @@ class InferenceServer:
     It also visualizes the inference results if visual_inference is set to True.
 
     Args:
-    grid_topic: the name of the topic to subscribe for the input grid volume
-    infer_topic: the name of the topic to publish the inference prediction
-    model_path: the path to the trained model for inference
-    grid_length: the physical length of the grid volume, used for visualization
-    voxel_disc: the discretization of the grid volume, used for inference and visualization
-    ori_type: the type of the orientation representation in inference, "quat", "so3" or "R6d"
-    visual_inference: whether to visualize the inference results using RViz, be useful
-        for debugging and demonstration
+        grid_topic: the name of the topic to subscribe for the input grid volume
+        infer_topic: the name of the topic to publish the inference prediction
+        model_path: the path to the trained model for inference
+        grid_length: the physical length of the grid volume, used for visualization
+        voxel_disc: the discretization of the grid volume, used for inference and visualization
+        ori_type: the type of the orientation representation in inference, "quat", "so3" or "R6d"
+        visual_inference: whether to visualize the inference results using RViz, be useful
+            for debugging and demonstration
     """
 
     def __init__(
@@ -51,13 +51,13 @@ class InferenceServer:
 
         Args:
             gird_vol: the input grid volume, should be
-            a 3D numpy array of shape (voxel_disc, voxel_disc, voxel_disc)
+                a 3D numpy array of shape (voxel_disc, voxel_disc, voxel_disc)
 
         Returns:
             prediction: the inference prediction, a numpy array of shape
-            (1, 4, voxel_disc, voxel_disc, voxel_disc), where the first channel is the input grid volume,
-            the second channel is the predicted grasp quality, the third channel is the predicted grasp orientation,
-            and the fourth channel is the predicted grasp wrench"""
+                (1, 4, voxel_disc, voxel_disc, voxel_disc), where the first channel is the input grid volume,
+                the second channel is the predicted grasp quality, the third channel is the predicted grasp orientation,
+                and the fourth channel is the predicted grasp wrench"""
         if len(gird_vol.shape) == 3:
             gird_vol = np.expand_dims(gird_vol, axis=0)
 

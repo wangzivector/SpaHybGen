@@ -55,8 +55,9 @@ class GraspOptimization(SpactialOptimization):
             tqdm_disable (bool, optional): Whether to disable the tqdm progress bar. Defaults to False.
 
         Returns:
-            q_trajectory (np.ndarray): The trajectory of the optimized grasp poses over iterations.
-            losses_dict (dict): A dictionary containing the loss values for each component over iterations.
+            out:
+            - q_trajectory (np.ndarray): The trajectory of the optimized grasp poses over iterations.
+            - losses_dict (dict): A dictionary containing the loss values for each component over iterations.
         """
         scene_infer_map = torch.from_numpy(scene_infer_map_np).float()
         self.reset_scene(scene_infer_map, target_appr_matrix)

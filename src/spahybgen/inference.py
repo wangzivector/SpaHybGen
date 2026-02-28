@@ -23,10 +23,11 @@ def predict(
         device: The device to run the inference
 
     Returns:
-        qual_vol: The predicted quality volume, in shape of (D, H, W)
-        rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
-        where C is the channel number for rotation representation (e.g., 4 for quaternion)
-        wren_vol: The predicted wrench volume, in shape of (D, H, W)
+        out:
+        - qual_vol: The predicted quality volume, in shape of (D, H, W)
+        - rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
+            where C is the channel number for rotation representation (e.g., 4 for quaternion)
+        - wren_vol: The predicted wrench volume, in shape of (D, H, W)
     """
     # move input to the GPU
     grid_vol_t = torch.from_numpy(grid_vol.astype(np.float32)).unsqueeze(0).to(device)
@@ -45,7 +46,18 @@ def predict(
 def process(
     qual_vol: np.ndarray, rot_vol: np.ndarray, wren_vol: np.ndarray, gaussian_filter_sigma: float = 1.0
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """smooth quality volume with a Gaussian"""
+    """Smooth estimated feature volumes with a Gaussian
+
+    Args:
+        qual_vol: The predicted quality volume, in shape of (D, H, W)
+        rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
+            where C is the channel number for rotation representation (e.g., 4 for quaternion)
+        wren_vol: The predicted wrench volume, in shape of (D, H, W)
+        gaussian_filter_sigma: sigma value for ndimage.gaussian_filter()
+
+    Returns:
+        filtered qual_vol, rot_vol, wren_vol
+    """
     if gaussian_filter_sigma > 0:
         qual_vol = ndimage.gaussian_filter(qual_vol, sigma=gaussian_filter_sigma, mode="nearest")
         wren_vol = ndimage.gaussian_filter(wren_vol, sigma=gaussian_filter_sigma, mode="nearest")
@@ -63,19 +75,20 @@ def select(
 ) -> Tuple[list, list, np.ndarray, np.ndarray]:
     """Select the contact poses and wrench positions from the predicted volumes based on the thresholds
 
-     Args:
+    Args:
         qual_vol: The predicted quality volume, in shape of (D, H, W)
         rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
-        where C is the channel number for rotation representation (e.g., 4 for quaternion)
+            where C is the channel number for rotation representation (e.g., 4 for quaternion)
         wren_vol: The predicted wrench volume, in shape of (D, H, W)
         qual_threshold: The threshold for selecting contact poses based on quality
         wren_threshold: The threshold for selecting wrench positions based on wrench score
 
     Returns:
-        tip_poses: list of selected contact poses, each pose is a tuple of (Rotation, np.ndarray)
-        tip_scores: list of quality scores corresponding to the selected contact poses
-        wren_posis: array of selected wrench positions, (N, 3), N is the number of selected wrench positions
-        wren_scores: array of wrench scores corresponding to the selected wrench positions, in shape of (N,)
+        out:
+        - tip_poses: list of selected contact poses, each pose is a tuple of (Rotation, np.ndarray)
+        - tip_scores: list of quality scores corresponding to the selected contact poses
+        - wren_posis: array of selected wrench positions, (N, 3), N is the number of selected wrench positions
+        - wren_scores: array of wrench scores corresponding to the selected wrench positions, in shape of (N,)
     """
     # threshold on grasp quality
     qual_vol[qual_vol < qual_threshold] = 0.0
@@ -102,19 +115,20 @@ def fetch_topK(
 ) -> Tuple[list, list, np.ndarray, np.ndarray]:
     """Select the top-K contact poses and wrench positions from the predicted volumes based on the scores
 
-     Args:
+    Args:
         qual_vol: The predicted quality volume, in shape of (D, H, W)
         rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
-        where C is the channel number for rotation representation (e.g., 4 for quaternion)
+            where C is the channel number for rotation representation (e.g., 4 for quaternion)
         wren_vol: The predicted wrench volume, in shape of (D, H, W)
         qual_numbers: The number of top contact poses to select based on quality
         wren_numbers: The number of top wrench positions to select based on wrench score
 
     Returns:
-        tip_poses: list of selected contact poses, each pose is a tuple of (Rotation, np.ndarray)
-        tip_scores: list of quality scores corresponding to the selected contact poses
-        wren_posis: array of selected wrench positions, (N, 3), N
-        wren_scores: array of wrench scores corresponding to the selected wrench positions, in shape of (N,)
+        out:
+        - tip_poses: list of selected contact poses, each pose is a tuple of (Rotation, np.ndarray)
+        - tip_scores: list of quality scores corresponding to the selected contact poses
+        - wren_posis: array of selected wrench positions, (N, 3), N
+        - wren_scores: array of wrench scores corresponding to the selected wrench positions, in shape of (N,)
     """
     # # construct grasps
     tip_poses, tip_scores = [], []
@@ -134,15 +148,16 @@ def select_index(
 ) -> Tuple[Tuple[spatial.transform._rotation.Rotation, np.ndarray], np.ndarray]:
     """Select the contact pose and score from the predicted volumes based on the index
 
-     Args:
+    Args:
         qual_vol: The predicted quality volume, in shape of (D, H, W)
         rot_vol: The predicted rotation volume, in shape of (C, D, H, W),
-        where C is the channel number for rotation representation (e.g., 4 for quaternion)
+            where C is the channel number for rotation representation (e.g., 4 for quaternion)
         index: The index of the selected contact pose, in shape of (3,) in (D, H, W)
 
     Returns:
-        tip_pose: The selected contact pose, a tuple of (Rotation, np.ndarray)
-        tip_score: The quality score corresponding to the selected contact pose
+        out:
+        - tip_pose: The selected contact pose, a tuple of (Rotation, np.ndarray)
+        - tip_score: The quality score corresponding to the selected contact pose
     """
     i, j, k = index
     score = qual_vol[i, j, k]
@@ -164,6 +179,13 @@ class InferenceBase:
     from the input grid volume using a trained network loaded locally"""
 
     def __init__(self, model_path: str, voxel_disc: int, ori_type: str) -> None:
+        """Init fun. for Inference
+
+        Args:
+            model_path: path to model weights
+            voxel_disc: voxel counts, 80
+            ori_type: quat or r6d
+        """
         self.voxel_disc = voxel_disc
 
         ## Inintialize Inference Network
@@ -171,15 +193,16 @@ class InferenceBase:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.net = load_network(Path(model_path), self.device, ntargs)
 
-    def inference(self, gird_vol: np.ndarray, gaussian_filter_sigma: float = 0):
+    def inference(self, gird_vol: np.ndarray, gaussian_filter_sigma: float = 0) -> np.ndarray:
         """Predict the contact poses and wrench positions from the input grid volume using the loaded network
 
         Args:
             gird_vol: The input grid volume, should be in shape of (n, D, H, W) or (D, H, W)
             gaussian_filter_sigma: The sigma for Gaussian smoothing of the predicted quality and wrench volumes
+
         Returns:
             prediction: The predicted volumes, in shape of (C, D, H, W),
-            where C is the channel number for input grid, quality, rotation and wrench volumes
+                where C is the channel number for input grid, quality, rotation and wrench volumes
         """
         if len(gird_vol.shape) == 3:
             gird_vol = np.expand_dims(gird_vol, axis=0)

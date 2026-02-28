@@ -8,12 +8,11 @@ from std_msgs.msg import Float32MultiArray
 
 
 class GraspOptNode(object):
-    """ROS Node for Grasp Optimization Module,
-    subscribe the inference result and conduct optimization,
-    then publish the optimized grasp configuration.
+    """ROS Node for Grasp Optimization Module, subscribe the inference
+    result and conduct optimization, then publish the optimized grasp configuration.
 
     Args:
-        All parameters are passed as arguments for grasp optimization class
+        Parameters: All parameters are passed as arguments for grasp optimization class
     """
 
     def __init__(
@@ -98,8 +97,9 @@ class GraspOptNode(object):
             inference: The current inference data to be used for optimization
 
         Returns:
-            q_trajectory: The trajectory of optimized grasp configurations during the optimization process
-            loss_dict: The dictionary containing the loss values during the optimization process
+            out:
+            - q_trajectory: The trajectory of optimized grasp configurations during the optimization process
+            - loss_dict: The dictionary containing the loss values during the optimization process
         """
         tic = time.time()
         cam_appr_vector = [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
@@ -123,8 +123,9 @@ class GraspOptNode(object):
             loss_dict: The dictionary containing the loss values
 
         Returns:
-            pose: The final optimized grasp pose
-            joints: The final optimized grasp joint configuration"""
+            out:
+            - pose: The final optimized grasp pose
+            - joints: The final optimized grasp joint configuration"""
         indx_good = loss_dict["sort_ids"][0]
         gq_np = q_trajectory[indx_good]
 
@@ -144,8 +145,9 @@ class GraspOptNode(object):
             trial_id: The current trial id for logging purposes
 
         Returns:
-            pose: The final optimized grasp pose
-            joints: The final optimized grasp joint configuration
+            out:
+            - pose: The final optimized grasp pose
+            - joints: The final optimized grasp joint configuration
         """
         assert self.inference is not None, "No inference data to conduct optimization."
         q_trajectory, loss_dict = self.conduct_grasp_optimization(self.inference)

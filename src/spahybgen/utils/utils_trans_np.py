@@ -241,8 +241,8 @@ class Transform(object):
         """Initialize with a LookAt matrix.
 
         Returns:
-            T_eye_ref, the transform from camera to the reference frame, w.r.t.
-            which the input arguments were defined.
+            T_eye_ref: the transform from camera to the reference frame, w.r.t.
+                which the input arguments were defined.
         """
         eye = np.asarray(eye)
         center = np.asarray(center)

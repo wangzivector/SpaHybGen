@@ -125,8 +125,8 @@ def to_cloud_msg(
     Args:
         points: Point coordinates as array of shape (N,3).
         colors: Colors as array of shape (N,3).
-        frame
-        stamp
+        frame: frame id for visualization
+        stamp: time stamp for msg
     """
     msg = PointCloud2()
     msg.header.frame_id = frame
