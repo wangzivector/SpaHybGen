@@ -20,6 +20,7 @@ class Dataset(torch.utils.data.Dataset):
         orientation_type: str = "quat",
         grid_type: str = "tsdf",
         data_type: str = "Indexed",
+        ratio_gt_pose_to_wrench=0.25,
         tqdm_disable: bool = False,
     ) -> None:
         """Initialize the dataset
@@ -40,6 +41,8 @@ class Dataset(torch.utils.data.Dataset):
         # self.augment = augment
         self.orientation_type = orientation_type
         self.grid_type = grid_type
+        self.ratio_gt_pose_to_wrench = ratio_gt_pose_to_wrench
+
         self.data = {
             "scene_tsdf_path": [],
             "scene_voxel_path": [],
@@ -57,6 +60,11 @@ class Dataset(torch.utils.data.Dataset):
         self.data["scene_voxel_path"].sort()
         self.data["contact_path"].sort()
         self.data["wrench_path"].sort()
+
+        assert (
+            len(self.data["contact_path"]) != 0
+        ), f"No contact file is found, double-check provided path: {root.absolute()}"
+
         assert len(self.data["contact_path"]) == len(self.data["scene_tsdf_path"])
         assert len(self.data["contact_path"]) == len(self.data["scene_voxel_path"])
         assert len(self.data["contact_path"]) == len(self.data["wrench_path"])
@@ -184,7 +192,10 @@ class Dataset(torch.utils.data.Dataset):
         """
         indexs_contact = GraspType.index_str2nums(df_contact_index, is_array=True).astype(np.uint16)
         num_focal_contact = int(self.numsample * focal_ratio_contact)
-        num_nonfocal_surface_contact = int(self.numsample * ((1 - focal_ratio_contact) / 4))
+        ratios_nonfocal_surface_contact = 0.25
+        num_nonfocal_surface_contact = int(
+            self.numsample * ((1 - focal_ratio_contact) * ratios_nonfocal_surface_contact)
+        )
         num_nonfocal_spatial_contact = self.numsample - (num_focal_contact + num_nonfocal_surface_contact)
 
         index_tsdf_surface = np.array(np.nonzero(scene_data.squeeze())).transpose()
@@ -275,12 +286,11 @@ class Dataset(torch.utils.data.Dataset):
         """
 
         indexs_wrench = GraspType.index_str2nums(df_wrench_index, is_array=True).astype(np.uint16)
-
-        num_focal_wrench = int(self.numsample / 4 * focal_ratio_wrench)
-        num_nonfocal_wrench = int(self.numsample / 4 - num_focal_wrench)
-
-        indxs_bank_ind = np.random.choice(scene_data.squeeze().shape[0], size=self.numsample * 3)
-        indxs_bank = indxs_bank_ind.reshape((self.numsample, 3))
+        num_focal_wrench = int(self.numsample * self.ratio_gt_pose_to_wrench * focal_ratio_wrench)
+        num_nonfocal_wrench = int(self.numsample * self.ratio_gt_pose_to_wrench - num_focal_wrench)
+        index_dims = 3
+        indxs_bank_ind = np.random.choice(scene_data.squeeze().shape[0], size=self.numsample * index_dims)
+        indxs_bank = indxs_bank_ind.reshape((self.numsample, index_dims))
         index_wrench_appends = []
         for index_num in indxs_bank:
             str_index = GraspType.index_nums2str(index_num)
@@ -382,94 +392,3 @@ class Dataset(torch.utils.data.Dataset):
         target_wrens = torch.vstack(target_wrens)
         target = (target_socres, target_rots, target_wrens)
         return [input, target]
-
-
-def create_train_val_loaders(
-    root, batch_size: int, val_split: float, data_type: str, kwargs
-) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
-    """Create the train and validation dataloaders for the dataset
-
-    Args:
-        root: The root directory of the dataset
-        batch_size: The batch size for the dataloaders
-        val_split: The ratio of the validation set size to the whole dataset size
-        data_type: The type of the output data. Can be "Indexed" or "Full"
-        kwargs: Additional keyword arguments for the dataloaders, such as num_workers and pin_memory
-
-    Returns:
-        out:
-        - train_loader: the dataloader for the training set
-        - val_loader: the dataloader for the validation set
-    """
-
-    # load the dataset
-    dataset = Dataset(root, numsample=5000, orientation_type="R6d", grid_type="voxel", data_type=data_type)
-    # split into train and validation sets
-    val_size = int(val_split * len(dataset))
-    train_size = len(dataset) - val_size
-    train_set, val_set = torch.utils.data.random_split(dataset, [train_size, val_size])
-    # create loaders for both datasets
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size=batch_size,
-        shuffle=True,
-        drop_last=True,
-        collate_fn=Dataset.collate_fn_concatenate if data_type == "Indexed" else Dataset.collate_fn_full,
-        **kwargs
-    )
-    val_loader = torch.utils.data.DataLoader(
-        val_set,
-        batch_size=batch_size,
-        shuffle=False,
-        drop_last=True,
-        collate_fn=Dataset.collate_fn_concatenate if data_type == "Indexed" else Dataset.collate_fn_full,
-        **kwargs
-    )
-    return train_loader, val_loader
-
-
-if __name__ == "__main__":
-    ### Test code for dataset loading and dataloader
-    use_cuda = torch.cuda.is_available()
-    kwargs = {"num_workers": 4, "pin_memory": True} if use_cuda else {}
-    data_type = "Full"  # Indexed or Full
-    val_split = 0.9
-    batch_size = 4
-    dataset = Path("./dataset")
-    train_loader, val_loader = create_train_val_loaders(dataset, batch_size, val_split, data_type, kwargs)
-
-    count_it = 0
-    if data_type == "Indexed":
-        for xs, ys, indexs in iter(train_loader):
-            count_it += 1
-            scores, rots, wrens = ys
-            inds_contact, inds_wrench = indexs
-
-            print(
-                "{} ==> xs: ".format(count_it),
-                xs.shape,
-                "inds_contact: ",
-                inds_contact.shape,
-                "inds_wrench: ",
-                inds_wrench.shape,
-                "scores: ",
-                scores.shape,
-                "rots: ",
-                rots.shape,
-                "wrens: ",
-                wrens.shape,
-            )
-    else:
-        for xs, ys in iter(train_loader):
-            count_it += 1
-            scores, rots, wrens = ys
-            print(
-                "{} ==> xs: ".format(count_it),
-                xs.shape,
-                "scores: ",
-                scores.shape,
-                "rots: ",
-                rots.shape,
-                "wrens: ",
-                wrens.shape,
-            )
