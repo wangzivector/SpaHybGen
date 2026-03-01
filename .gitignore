@@ -1,4 +1,5 @@
 # project related
+assets/inference_result.npy
 dataset
 data
 .vscode

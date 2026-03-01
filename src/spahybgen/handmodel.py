@@ -1,5 +1,5 @@
 # Inherent from [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp)
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, Any
 import json
 import os
 
@@ -12,7 +12,6 @@ from plotly import graph_objects as go
 from pytorch_kinematics.urdf_parser_py.urdf import URDF, Mesh
 import trimesh.sample
 import einops
-import spahybgen.utils.utils_plotly as ut_plotly
 import spahybgen.utils.utils_trans_torch as ut_trans_torch
 
 
@@ -135,7 +134,7 @@ class HandModel:
 
             ## contact points
             if link.name in self.contact_point_dict:
-                self.assign_contact_candidates(link, rotation, translation)
+                self.assign_contact_candidates(link.name, mesh, rotation, translation)
 
         ## joint limits
         self.inital_joint_limits()
@@ -147,23 +146,26 @@ class HandModel:
         else:
             self.initial_joints = self.joints_q_lower
 
-    def assign_contact_candidates(self, link, rotation, translation) -> None:
+    def assign_contact_candidates(
+        self, link_name: str, mesh: Any, rotation: np.ndarray, translation: np.ndarray
+    ) -> None:
         """Assign contact point candidates for a given link,
         and compute the contact point basis and normals in the world frame.
 
         Args:
-            link: The link object from the URDF model
+            link_name: The name of link object from the URDF model
+            mesh: mesh of link
             rotation: The rotation matrix for the link visual, in shape of (3, 3)
             translation: The translation vector for the link visual, in shape of (1, 3)
         """
-        cpb = np.array(self.contact_point_dict[link.name])
+        cpb = np.array(self.contact_point_dict[link_name])
         # if there is multiple sets, choose one, test it with allegro hand
         if len(cpb.shape) == 1:
             cpb = np.expand_dims(cpb, axis=0)
         for cpb_part_i in range(cpb.shape[0]):
             cpb_part = cpb[cpb_part_i]
-            cpb_part_name = link.name + "+" + str(cpb_part_i)
-            cp_basis = mesh.vertices[cpb_part] * scale  # type: ignore
+            cpb_part_name = link_name + "+" + str(cpb_part_i)
+            cp_basis = mesh.vertices[cpb_part] * self.scale
             cp_basis = np.matmul(rotation, cp_basis.T).T + translation
             cp_basis = torch.cat(
                 [
@@ -172,14 +174,14 @@ class HandModel:
                 ],
                 dim=-1,
             )
-            self.contact_point_basis[cpb_part_name] = cp_basis.unsqueeze(0).repeat(batch_size, 1, 1)
+            self.contact_point_basis[cpb_part_name] = cp_basis.unsqueeze(0).repeat(self.batch_size, 1, 1)
             v1 = cp_basis[1, :3] - cp_basis[0, :3]
             v2 = cp_basis[2, :3] - cp_basis[0, :3]
             v1 = v1 / torch.norm(v1)
             v2 = v2 / torch.norm(v2)
             self.contact_normals[cpb_part_name] = torch.cross(v1, v2).view([1, 3])
             self.contact_normals[cpb_part_name] = (
-                self.contact_normals[cpb_part_name].unsqueeze(0).repeat(batch_size, 1, 1)
+                self.contact_normals[cpb_part_name].unsqueeze(0).repeat(self.batch_size, 1, 1)
             )
 
     def inital_joint_limits(self) -> None:
@@ -213,6 +215,7 @@ class HandModel:
         batch_size: int = 1,
         device: Optional[torch.device] = None,
         hand_scale: float = 1.0,
+        model_path: str = "./handmodel",
     ):
         """Load hand model from json file, the json file should contain the necessary information
         for loading the hand model, including the urdf path, mesh path, contact point information, etc.
@@ -228,7 +231,7 @@ class HandModel:
         """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        hand_infos = json.load(open("handmodel/hand_infos.json"))
+        hand_infos = json.load(open(model_path + "/hand_infos.json"))
         urdf_path = hand_infos["urdf_path"][hand_name]
         mesh_path = hand_infos["meshes_path"][hand_name]
         actuate_dofs = hand_infos["dofs"][hand_name]
@@ -702,45 +705,3 @@ class HandModel:
                 )
             )
         return data
-
-
-if __name__ == "__main__":
-    ### Test code for hand model
-    robot_name, hand_scale = "allegro_hand", 0.6
-    robot_name, hand_scale = "robotiq2f_para", 1.0
-    robot_name, hand_scale = "barrett_hand", 0.6
-    robot_name, hand_scale = "finray_4f", 1.0
-    robot_name, hand_scale = "finray_3f", 1.0
-    robot_name, hand_scale = "finray_2f", 1.0
-    robot_name, hand_scale = "soft_pneu_3f", 1.0
-    robot_name, hand_scale = "robotiq_3finger", 1.0
-
-    orientation_type = "R6d"
-    batch_size = 1
-    hand_model = HandModel.load_hand_from_json(robot_name, batch_size, hand_scale=hand_scale)
-
-    init_opt_q = torch.zeros(1, (3 + 6) + hand_model.actuate_dofs, device="cuda")
-    init_opt_q[:, :3] = torch.tensor([0.0, 0.0, -0.0], device="cuda")
-    init_opt_q[:, 3:9] = torch.tensor([1.0, 0.0, 0.0, 0.0, 1.0, 0.0], device="cuda")
-    init_opt_q[:, 9:] = hand_model.joints_q_lower
-
-    hand_model.update_kinematics(init_opt_q)
-    vis_data = hand_model.get_plotly_data(init_opt_q, color="lightblue", opacity=0.5)
-    # trans_meshes = hand_model.get_meshes_from_q(init_opt_q)
-    surface_points = hand_model.get_surface_points(init_opt_q, downsample_size=128)
-
-    contact_points, contact_normals = hand_model.sample_contact_points_and_normal(q=init_opt_q)
-
-    ## surface points visualization
-    vis_data.append(ut_plotly.plot_point_cloud(pts=surface_points.cpu().squeeze(0), color="blue"))
-
-    ## contact points visualization
-    vis_data.append(ut_plotly.plot_point_cloud(pts=contact_points.cpu().squeeze(0), color="red"))
-    for i in range(10):
-        vis_data.append(
-            ut_plotly.plot_point_cloud(
-                pts=(contact_points + 0.001 * i * contact_normals).cpu().squeeze(0), color="yellow"
-            )
-        )
-
-    fig = go.Figure(data=vis_data).show()

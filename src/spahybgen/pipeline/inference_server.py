@@ -105,10 +105,8 @@ class InferenceServer:
             )
 
 
-###
-### Inference Server Instance
-###
 if __name__ == "__main__":
+    """Inference Server Instance"""
     rospy.init_node("inference_server")
     rospy.loginfo("[Inference]: Started sensor_server node.")
 

@@ -23,9 +23,6 @@ def test_contact_dataset_loading():
     ratio_pose_wrench = 0.25
     grid_type = "voxel"
     root = Path("./dataset")
-    root = Path(
-        "/media/smart/3cd0322b-ffd8-47ef-b2a7-80de5fcfeded/home/smarnlab/SpatialHybridGen/spahybgen/dataset"
-    )
 
     for data_type in ["Full", "Indexed"]:
         dataset = Dataset(

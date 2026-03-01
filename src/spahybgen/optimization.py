@@ -900,11 +900,11 @@ class MeanScaleNormalizer:
         if self.mean is None:
             self.mean = [0.0] * len(losses)
             for i, loss_i in enumerate(losses):
-                self.mean[i] = loss_i.detach().numpy().mean()
+                self.mean[i] = loss_i.detach().cpu().numpy().mean()
                 scaled.append(losses[i] / (self.mean[i] + self.eps) * post_weights[i])
         else:
             for i, loss_i in enumerate(losses):
-                self.mean[i] = self.m * self.mean[i] + (1 - self.m) * loss_i.detach().numpy().mean()
+                self.mean[i] = self.m * self.mean[i] + (1 - self.m) * loss_i.detach().cpu().numpy().mean()
                 scaled.append(losses[i] / (self.mean[i] + self.eps) * post_weights[i])
 
         return scaled
