@@ -1,4 +1,4 @@
-# SpaHybGen: Learning Contact Representations in Real-World Clutter for General Robotic Grasping 
+# SpaHybGen: Learning contact representations in real-world clutter for universal robotic grasping
 
 SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scenes using learning and optimization strategies. It uses the real grasping dataset GraspNet-1Billion to train the inference section. SpaHybGen can directly and robustly deploy any robotic hand with its URDF to actual clutter grasping in minutes, using a single depth camera.
 
@@ -23,8 +23,6 @@ SpaHybGen generates grasp poses for general robotic hands in SE(3) clutter scene
 <br>✅ Broke down functions and formated for clarity.
 <br>✅ Added functional documentation and type hints.
 <br>✅ Added pytest-based modular test [`Code Test` section]
-- [ ] **Task-oriented objectives and manipulation hand primitives** [before April 2026]
-
 
 ## Code Environment
 We use Python 3.8 in Conda to train 3D U-Net, infer contacts, and optimize grasps.
@@ -218,7 +216,17 @@ This script is a combination of [2. Contact Inference](#2-contact-inference) and
 
 
 ## Cite
-This research is not published.
+```
+@article{wang2026learning,
+  title={Learning contact representations in real-world clutter for universal robotic grasping},
+  author={Wang, Xianli and Tam, Lap Mou and Xu, Qingsong},
+  journal={Nature Machine Intelligence},
+  year={2026},
+  doi={https://doi.org/10.1038/s42256-026-01292-y},
+  publisher={Nature Publishing Group UK London}
+}
+```
+
 
 ## Acknowledge
 This project is inspired by the excellent works [VGN](https://github.com/ethz-asl/vgn), [GenDexGrasp](https://github.com/tengyu-liu/GenDexGrasp), and [GraspNetAPI](https://github.com/graspnet/graspnetAPI).
